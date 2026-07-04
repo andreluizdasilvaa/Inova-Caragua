@@ -38,7 +38,7 @@ export default function Login() {
         }
 
         setLoading(false)
-        router.replace('/admin')
+        router.replace('/')
     }
     
     return (

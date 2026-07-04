@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Asset } from '@/mockData';
+import { Asset, CategoriaItem, EstadoConservacao, StatusItem } from '@/mockData';
 import { Card, Button, AssetStatusBadge } from '@/components/UI';
 import { Search, Plus, ListPlus, Eye, FileSpreadsheet } from 'lucide-react';
 
@@ -11,27 +11,38 @@ interface InventarioViewProps {
   setSelectedAsset: (asset: Asset) => void;
 }
 
+const CATEGORIA_LABEL: Record<CategoriaItem, string> = {
+  INFORMATICA: 'Informática',
+  MOBILIARIO: 'Mobiliário',
+  ELETRODOMESTICO: 'Eletrodoméstico',
+  CONECTIVIDADE: 'Conectividade',
+  PREDIAL: 'Predial',
+  OUTRO: 'Outro',
+};
+
 export const InventarioView: React.FC<InventarioViewProps> = ({
   assets,
   setView,
   setSelectedAsset
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('Todas');
+  const [selectedCategory, setSelectedCategory] = useState<string>('Todas');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const categories = ['Todas', 'Climatização', 'Mobiliário', 'Eletrônicos', 'Hidráulica', 'Segurança'];
+  const categories: (CategoriaItem | 'Todas')[] = ['Todas', 'INFORMATICA', 'MOBILIARIO', 'ELETRODOMESTICO', 'CONECTIVIDADE', 'PREDIAL', 'OUTRO'];
 
   // Filter computation
   const filteredAssets = useMemo(() => {
     return assets.filter((asset) => {
+      const q = searchQuery.toLowerCase();
       const matchesSearch = 
-        asset.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        asset.patrimony.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        asset.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        asset.model.toLowerCase().includes(searchQuery.toLowerCase());
+        !q ||
+        asset.nome.toLowerCase().includes(q) ||
+        (asset.numeroPatrimonio && asset.numeroPatrimonio.toLowerCase().includes(q)) ||
+        (asset.marca && asset.marca.toLowerCase().includes(q)) ||
+        (asset.modelo && asset.modelo.toLowerCase().includes(q));
 
-      const matchesCategory = selectedCategory === 'Todas' || asset.category === selectedCategory;
+      const matchesCategory = selectedCategory === 'Todas' || asset.categoria === selectedCategory;
 
       return matchesSearch && matchesCategory;
     });
@@ -40,9 +51,9 @@ export const InventarioView: React.FC<InventarioViewProps> = ({
   const stats = useMemo(() => {
     return {
       total: assets.length,
-      operacional: assets.filter(a => a.status === 'Operacional').length,
-      manutencao: assets.filter(a => a.status === 'Em Manutenção').length,
-      danificado: assets.filter(a => a.status === 'Danificado').length
+      ativo: assets.filter(a => a.status === 'ATIVO').length,
+      manutencao: assets.filter(a => a.status === 'EM_MANUTENCAO').length,
+      baixado: assets.filter(a => a.status === 'BAIXADO').length
     };
   }, [assets]);
 
@@ -82,18 +93,21 @@ export const InventarioView: React.FC<InventarioViewProps> = ({
             variant="secondary" 
             onClick={() => {
               const newAsset: Asset = {
-                patrimony: `PAT-2026-${String(assets.length + 1).padStart(3, '0')}`,
-                name: 'Novo Aparelho Escolar',
-                category: 'Climatização',
-                location: 'Sala de Aula A',
-                status: 'Operacional',
-                model: 'Inverter Eco',
-                brand: 'Consul',
-                serialNumber: 'SRL-NEW-9921',
-                purchaseDate: '04/07/2026',
-                supplier: 'Distribuidora S.A.',
-                invoice: '000.992.112',
-                warrantyStatus: 'Ativa (Até 2028)'
+                id: `PAT-2026-${String(assets.length + 1).padStart(3, '0')}`,
+                nome: 'Novo Aparelho Escolar',
+                categoria: 'INFORMATICA',
+                numeroPatrimonio: `PAT-2026-${String(assets.length + 1).padStart(3, '0')}`,
+                marca: 'Consul',
+                modelo: 'Inverter Eco',
+                estadoConservacao: 'NOVO',
+                status: 'ATIVO',
+                dataAquisicao: new Date(),
+                valorAquisicao: null,
+                observacoes: null,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                setorId: 'setor_padrao',
+                cadastradoPorId: null,
               };
               setSelectedAsset(newAsset);
               setView('detalhes');
@@ -113,16 +127,16 @@ export const InventarioView: React.FC<InventarioViewProps> = ({
           <p className="text-2xl font-black mt-1 leading-none">{stats.total}</p>
         </div>
         <div className="bg-white rounded p-4 border border-slate-200 flex flex-col justify-between">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Em Operação</span>
-          <p className="text-2xl font-black text-teal-600 mt-1 leading-none">{stats.operacional}</p>
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Ativos</span>
+          <p className="text-2xl font-black text-teal-600 mt-1 leading-none">{stats.ativo}</p>
         </div>
         <div className="bg-white rounded p-4 border border-slate-200 flex flex-col justify-between">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Sob Manutenção</span>
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Em Manutenção</span>
           <p className="text-2xl font-black text-brand-blue mt-1 leading-none">{stats.manutencao}</p>
         </div>
         <div className="bg-white rounded p-4 border border-slate-200 flex flex-col justify-between">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Danificados</span>
-          <p className="text-2xl font-black text-rose-600 mt-1 leading-none">{stats.danificado}</p>
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Baixados</span>
+          <p className="text-2xl font-black text-rose-600 mt-1 leading-none">{stats.baixado}</p>
         </div>
       </div>
 
@@ -133,7 +147,7 @@ export const InventarioView: React.FC<InventarioViewProps> = ({
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Pesquisar por patrimônio, marca, sala..."
+              placeholder="Pesquisar por patrimônio, marca, modelo..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full text-sm rounded border border-slate-200 bg-slate-50 pl-10 pr-3 py-2 focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-blue transition-all placeholder:text-slate-400 font-semibold"
@@ -153,7 +167,7 @@ export const InventarioView: React.FC<InventarioViewProps> = ({
                       : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                   }`}
                 >
-                  {cat}
+                  {cat === 'Todas' ? 'Todas' : CATEGORIA_LABEL[cat as CategoriaItem]}
                 </button>
               ))}
             </div>
@@ -170,7 +184,7 @@ export const InventarioView: React.FC<InventarioViewProps> = ({
                 <th className="py-3 px-4">Patrimônio</th>
                 <th className="py-3 px-4">Equipamento</th>
                 <th className="py-3 px-4">Categoria</th>
-                <th className="py-3 px-4">Localização</th>
+                <th className="py-3 px-4">Estado</th>
                 <th className="py-3 px-4">Status</th>
                 <th className="py-3 px-4 text-right">Ações</th>
               </tr>
@@ -178,16 +192,16 @@ export const InventarioView: React.FC<InventarioViewProps> = ({
             <tbody className="divide-y divide-slate-100 text-sm font-medium text-slate-700">
               {filteredAssets.length > 0 ? (
                 filteredAssets.map((asset) => (
-                  <tr key={asset.patrimony} className="hover:bg-slate-50/70 transition-all duration-150">
+                  <tr key={asset.id} className="hover:bg-slate-50/70 transition-all duration-150">
                     <td className="py-2.5 px-4 font-mono text-sm font-bold text-slate-600">
-                      {asset.patrimony}
+                      {asset.numeroPatrimonio || asset.id}
                     </td>
                     <td className="py-2.5 px-4">
-                      <div className="font-bold text-slate-900 leading-snug">{asset.name}</div>
-                      <div className="text-xs text-slate-400 font-medium">{asset.brand} - {asset.model}</div>
+                      <div className="font-bold text-slate-900 leading-snug">{asset.nome}</div>
+                      <div className="text-xs text-slate-400 font-medium">{asset.marca}{asset.modelo ? ` - ${asset.modelo}` : ''}</div>
                     </td>
-                    <td className="py-2.5 px-4 text-slate-500">{asset.category}</td>
-                    <td className="py-2.5 px-4 text-slate-500 font-semibold">{asset.location}</td>
+                    <td className="py-2.5 px-4 text-slate-500">{CATEGORIA_LABEL[asset.categoria]}</td>
+                    <td className="py-2.5 px-4 text-slate-500">{asset.estadoConservacao}</td>
                     <td className="py-2.5 px-4">
                       <AssetStatusBadge status={asset.status} />
                     </td>
@@ -203,7 +217,7 @@ export const InventarioView: React.FC<InventarioViewProps> = ({
                         <Eye className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => triggerToast(`Termo de responsabilidade gerado para o ativo ${asset.patrimony}`)}
+                        onClick={() => triggerToast(`Termo de responsabilidade gerado para o ativo ${asset.numeroPatrimonio}`)}
                         title="Exportar Termo"
                         className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-all inline-flex items-center cursor-pointer"
                       >

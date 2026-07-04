@@ -54,6 +54,7 @@ const nextAuthOptions: NextAuthOptions = {
                 token.userId = user.id as string; 
                 token.email = user.email as string;
                 token.name = user.name as string;
+                token.papel = (user as any).papel as string;
             }
             return token;
         },
@@ -66,6 +67,7 @@ const nextAuthOptions: NextAuthOptions = {
                 session.user.id = token.userId as string;
                 session.user.email = token.email as string;
                 session.user.name = token.name as string;
+                session.user.papel = token.papel as string;
             }
             return session;
         }

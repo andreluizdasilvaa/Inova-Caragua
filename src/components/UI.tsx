@@ -49,9 +49,9 @@ export const Button: React.FC<{
   };
 
   const sizes = {
-    sm: 'px-2 py-1 text-[11px]',
-    md: 'px-3 py-1.5 text-xs',
-    lg: 'px-4 py-2 text-sm',
+    sm: 'px-2.5 py-1.5 text-xs',
+    md: 'px-3.5 py-2 text-sm',
+    lg: 'px-5 py-2.5 text-base',
   };
 
   return (
@@ -70,23 +70,23 @@ export const Button: React.FC<{
 export const PriorityBadge: React.FC<{ priority: Priority }> = ({ priority }) => {
   if (priority === 'Alta') {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded bg-red-50 text-red-700 border border-red-150">
-        <AlertTriangle className="w-3 h-3 text-red-600 shrink-0" />
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded bg-red-50 text-red-700 border border-red-150">
+        <AlertTriangle className="w-3.5 h-3.5 text-red-600 shrink-0" />
         Alta
       </span>
     );
   }
   if (priority === 'Média') {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded bg-amber-50 text-amber-700 border border-amber-150">
-        <Info className="w-3 h-3 text-amber-600 shrink-0" />
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded bg-amber-50 text-amber-700 border border-amber-150">
+        <Info className="w-3.5 h-3.5 text-amber-600 shrink-0" />
         Média
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded bg-slate-50 text-slate-600 border border-slate-150">
-      <Clock className="w-3 h-3 text-slate-500 shrink-0" />
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded bg-slate-50 text-slate-600 border border-slate-150">
+      <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
       Baixa
     </span>
   );
@@ -96,21 +96,21 @@ export const PriorityBadge: React.FC<{ priority: Priority }> = ({ priority }) =>
 export const StatusBadge: React.FC<{ status: OccurrenceStatus }> = ({ status }) => {
   if (status === 'Aberto') {
     return (
-      <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded bg-slate-50 text-slate-600 border border-slate-150">
+      <span className="inline-flex items-center px-2.5 py-1 text-xs font-bold rounded bg-slate-50 text-slate-600 border border-slate-150">
         Aberto
       </span>
     );
   }
   if (status === 'Em Andamento') {
     return (
-      <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded bg-brand-ice text-brand-blue border border-blue-150">
+      <span className="inline-flex items-center px-2.5 py-1 text-xs font-bold rounded bg-brand-ice text-brand-blue border border-blue-150">
         Em Andamento
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-0.5 px-2 py-0.5 text-[10px] font-bold rounded bg-teal-50 text-teal-700 border border-teal-150">
-      <CheckCircle className="w-3 h-3 text-teal-600 shrink-0" />
+    <span className="inline-flex items-center gap-0.5 px-2.5 py-1 text-xs font-bold rounded bg-teal-50 text-teal-700 border border-teal-150">
+      <CheckCircle className="w-3.5 h-3.5 text-teal-600 shrink-0" />
       Resolvido
     </span>
   );
@@ -120,23 +120,23 @@ export const StatusBadge: React.FC<{ status: OccurrenceStatus }> = ({ status }) 
 export const AssetStatusBadge: React.FC<{ status: AssetStatus }> = ({ status }) => {
   if (status === 'Operacional') {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded bg-teal-50 text-teal-700 border border-teal-150">
-        <CheckCircle className="w-3 h-3 text-teal-600 shrink-0" />
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded bg-teal-50 text-teal-700 border border-teal-150">
+        <CheckCircle className="w-3.5 h-3.5 text-teal-600 shrink-0" />
         Operacional
       </span>
     );
   }
   if (status === 'Em Manutenção') {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded bg-slate-50 text-slate-600 border border-slate-150">
-        <Clock className="w-3 h-3 text-slate-500 shrink-0" />
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded bg-slate-50 text-slate-600 border border-slate-150">
+        <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
         Em Manutenção
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded bg-red-50 text-red-700 border border-red-150">
-      <AlertTriangle className="w-3 h-3 text-red-600 shrink-0" />
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded bg-red-50 text-red-700 border border-red-150">
+      <AlertTriangle className="w-3.5 h-3.5 text-red-600 shrink-0" />
       Danificado
     </span>
   );
@@ -151,12 +151,12 @@ export const StatsCard: React.FC<{
   trend?: { value: string; positive: boolean };
 }> = ({ title, value, subtitle, icon, trend }) => {
   return (
-    <Card className="p-3.5 flex items-start justify-between bg-white">
-      <div className="space-y-1">
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{title}</p>
-        <p className="text-2xl font-black text-slate-800 tracking-tight leading-none">{value}</p>
+    <Card className="p-4 flex items-start justify-between bg-white">
+      <div className="space-y-1.5">
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{title}</p>
+        <p className="text-3xl font-black text-slate-800 tracking-tight leading-none">{value}</p>
         {(subtitle || trend) && (
-          <div className="flex items-center gap-1.5 text-[10px] mt-1 font-medium">
+          <div className="flex items-center gap-1.5 text-xs mt-1.5 font-medium">
             {trend && (
               <span className={`font-bold ${trend.positive ? 'text-emerald-600' : 'text-rose-600'}`}>
                 {trend.value}
@@ -166,7 +166,7 @@ export const StatsCard: React.FC<{
           </div>
         )}
       </div>
-      {icon && <div className="p-1.5 bg-slate-50 rounded-md text-slate-500 border border-slate-100/80 shrink-0">{icon}</div>}
+      {icon && <div className="p-2 bg-slate-50 rounded-md text-slate-500 border border-slate-100/80 shrink-0">{icon}</div>}
     </Card>
   );
 };

@@ -6,11 +6,313 @@ generator client {
 datasource db {
     provider = "postgresql"
 }
-model User {
-    id          String         @id @default(uuid())
-    name        String?
-    email       String      @unique
-    password    String
 
-    @@map("users")
+// ---------------------------------------------------------------------
+// ENUMS
+// ---------------------------------------------------------------------
+
+/// Papel do usuário no sistema (definido no cadastro, não no login).
+/// O login é único; o papel é que determina o que a pessoa enxerga.
+enum Papel {
+    MESTRE // SEDUC/STII - aprova, agenda, gerencia usuários e instituições
+    TRIAGEM // classifica prioridade e valida as ocorrências
+    ESCOLA // diretor(a) / vice-diretor(a) - abre e acompanha chamados
+}
+
+enum CargoEscolar {
+    DIRETOR
+    VICE_DIRETOR
+}
+
+enum TipoInstituicao {
+    CRECHE
+    EMEI
+    EMEF
+    EMEIF
+    OUTRO
+}
+
+enum CategoriaItem {
+    INFORMATICA
+    MOBILIARIO
+    ELETRODOMESTICO
+    CONECTIVIDADE
+    PREDIAL
+    OUTRO
+}
+
+enum EstadoConservacao {
+    NOVO
+    BOM
+    REGULAR
+    RUIM
+    INSERVIVEL
+}
+
+enum StatusItem {
+    ATIVO
+    EM_MANUTENCAO
+    BAIXADO
+}
+
+enum TipoSolicitacao {
+    SERVICO
+    REPARO
+    TROCA
+    REABASTECIMENTO
+    OUTRO
+}
+
+enum Prioridade {
+    BAIXA
+    MEDIA
+    ALTA
+    URGENTE
+}
+
+/// Fluxo esperado:
+/// ABERTA -> AGUARDANDO_CORRECAO -> (volta pra ABERTA quando a escola reenvia)
+/// ABERTA -> AGUARDANDO_APROVACAO -> APROVADA -> AGENDADA -> EM_EXECUCAO -> CONCLUIDA
+/// RECUSADA / CANCELADA podem acontecer a partir de qualquer etapa em aberto.
+enum StatusOcorrencia {
+    ABERTA
+    AGUARDANDO_CORRECAO
+    AGUARDANDO_APROVACAO
+    APROVADA
+    AGENDADA
+    EM_EXECUCAO
+    CONCLUIDA
+    RECUSADA
+    CANCELADA
+}
+
+enum TipoAnexo {
+    FOTO_OCORRENCIA
+    ORCAMENTO
+    NOTA_FISCAL
+    LAUDO_TECNICO
+    OUTRO
+}
+
+// ---------------------------------------------------------------------
+// USUÁRIOS E INSTITUIÇÕES
+// ---------------------------------------------------------------------
+
+model Usuario {
+    id        String        @id @default(cuid())
+    nome      String
+    email     String        @unique
+    senhaHash String
+    papel     Papel
+    cargo     CargoEscolar? // só preenchido quando papel = ESCOLA
+    ativo     Boolean       @default(true) // "excluir" = ativo=false, nunca delete físico
+    createdAt DateTime      @default(now())
+    updatedAt DateTime      @updatedAt
+
+    // Só usuários ESCOLA pertencem a uma instituição
+    instituicaoId String?
+    instituicao   Instituicao? @relation(fields: [instituicaoId], references: [id], onDelete: SetNull)
+
+    // Mestre pode criar outros usuários (inclusive outros mestres)
+    criadoPorId     String?
+    criadoPor       Usuario?  @relation("UsuariosCriados", fields: [criadoPorId], references: [id], onDelete: SetNull)
+    usuariosCriados Usuario[] @relation("UsuariosCriados")
+
+    // Um mesmo usuário pode aparecer em papéis diferentes ao longo do fluxo da ocorrência
+    ocorrenciasCriadas   Ocorrencia[] @relation("OcorrenciasCriadas")
+    ocorrenciasTriadas   Ocorrencia[] @relation("OcorrenciasTriadas")
+    ocorrenciasAprovadas Ocorrencia[] @relation("OcorrenciasAprovadas")
+
+    itensCadastrados Item[]
+    anexosEnviados   Anexo[]
+    acoesHistorico   HistoricoOcorrencia[]
+    notificacoes     Notificacao[]
+
+    @@index([instituicaoId])
+    @@index([papel])
+}
+
+model Instituicao {
+    id         String          @id @default(cuid())
+    nome       String
+    tipo       TipoInstituicao @default(OUTRO)
+    codigoInep String?         @unique
+    endereco   String?
+    bairro     String?
+    telefone   String?
+    latitude   Float? // opcional - só se quiserem mapa de calor geográfico de verdade
+    longitude  Float?
+    ativo      Boolean         @default(true)
+    createdAt  DateTime        @default(now())
+    updatedAt  DateTime        @updatedAt
+
+    usuarios    Usuario[]
+    setores     Setor[]
+    ocorrencias Ocorrencia[]
+
+    @@index([ativo])
+}
+
+/// Setor/área da instituição (sala de informática, cozinha, pátio, etc.)
+/// É o que agrupa os itens do inventário e localiza as ocorrências.
+model Setor {
+    id        String   @id @default(cuid())
+    nome      String
+    descricao String?
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    instituicaoId String
+    instituicao   Instituicao @relation(fields: [instituicaoId], references: [id])
+
+    itens       Item[]
+    ocorrencias Ocorrencia[]
+
+    @@index([instituicaoId])
+}
+
+// ---------------------------------------------------------------------
+// INVENTÁRIO
+// ---------------------------------------------------------------------
+
+model Item {
+    id                String            @id @default(cuid())
+    nome              String // ex: "Monitor LG 19"
+    categoria         CategoriaItem     @default(OUTRO)
+    numeroPatrimonio  String?           @unique
+    numeroSerie       String?
+    marca             String?
+    modelo            String?
+    estadoConservacao EstadoConservacao @default(BOM)
+    status            StatusItem        @default(ATIVO)
+    dataAquisicao     DateTime?         @db.Date
+    valorAquisicao    Decimal?          @db.Decimal(10, 2)
+    observacoes       String?           @db.Text
+    createdAt         DateTime          @default(now())
+    updatedAt         DateTime          @updatedAt
+
+    setorId String
+    setor   Setor  @relation(fields: [setorId], references: [id])
+
+    cadastradoPorId String?
+    cadastradoPor   Usuario? @relation(fields: [cadastradoPorId], references: [id], onDelete: SetNull)
+
+    ocorrencias Ocorrencia[]
+
+    @@index([setorId])
+    @@index([categoria])
+    @@index([status])
+}
+
+// ---------------------------------------------------------------------
+// OCORRÊNCIAS / CHAMADOS (núcleo do sistema)
+// ---------------------------------------------------------------------
+
+model Ocorrencia {
+    id     String @id @default(cuid())
+    numero Int    @unique @default(autoincrement()) // nº amigável, ex: Chamado #0042
+
+    titulo          String
+    descricao       String           @db.Text
+    tipoSolicitacao TipoSolicitacao
+    status          StatusOcorrencia @default(ABERTA)
+    prioridade      Prioridade? // definida pela triagem, null até ser triada
+
+    localizacaoDescricao  String? // usado quando não há Setor específico (ex: "muro externo")
+    numeroPatrimonioTexto String? // patrimônio digitado pela escola, quando o Item ainda não está cadastrado
+
+    observacoesTriagem String? @db.Text // ex: motivo do "solicitar revisão"
+    observacoesMestre  String? @db.Text
+    motivoRecusa       String? @db.Text
+    prestadorServico   String? // empresa terceirizada ou órgão público acionado
+
+    valorOrcamento     Decimal?  @db.Decimal(10, 2)
+    dataVisitaAgendada DateTime?
+    dataConclusao      DateTime?
+    dataTriagem        DateTime?
+    dataAprovacao      DateTime?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    instituicaoId String
+    instituicao   Instituicao @relation(fields: [instituicaoId], references: [id])
+
+    setorId String?
+    setor   Setor?  @relation(fields: [setorId], references: [id])
+
+    itemId String?
+    item   Item?   @relation(fields: [itemId], references: [id])
+
+    criadoPorId String
+    criadoPor   Usuario @relation("OcorrenciasCriadas", fields: [criadoPorId], references: [id])
+
+    triagemPorId String?
+    triagemPor   Usuario? @relation("OcorrenciasTriadas", fields: [triagemPorId], references: [id])
+
+    aprovadoPorId String?
+    aprovadoPor   Usuario? @relation("OcorrenciasAprovadas", fields: [aprovadoPorId], references: [id])
+
+    anexos       Anexo[]
+    historico    HistoricoOcorrencia[]
+    notificacoes Notificacao[]
+
+    @@index([instituicaoId])
+    @@index([status])
+    @@index([prioridade])
+    @@index([tipoSolicitacao])
+    @@index([createdAt])
+}
+
+model Anexo {
+    id           String    @id @default(cuid())
+    tipo         TipoAnexo
+    url          String
+    nomeArquivo  String?
+    mimeType     String?
+    tamanhoBytes Int?
+    createdAt    DateTime  @default(now())
+
+    ocorrenciaId String
+    ocorrencia   Ocorrencia @relation(fields: [ocorrenciaId], references: [id], onDelete: Cascade)
+
+    enviadoPorId String
+    enviadoPor   Usuario @relation(fields: [enviadoPorId], references: [id])
+
+    @@index([ocorrenciaId])
+    @@index([tipo])
+}
+
+/// Linha do tempo da ocorrência - sustenta o fluxo de "solicitar revisão"
+/// e dá rastreabilidade completa (quem fez o quê e quando).
+model HistoricoOcorrencia {
+    id             String            @id @default(cuid())
+    statusAnterior StatusOcorrencia?
+    statusNovo     StatusOcorrencia
+    comentario     String?           @db.Text
+    createdAt      DateTime          @default(now())
+
+    ocorrenciaId String
+    ocorrencia   Ocorrencia @relation(fields: [ocorrenciaId], references: [id], onDelete: Cascade)
+
+    autorId String
+    autor   Usuario @relation(fields: [autorId], references: [id])
+
+    @@index([ocorrenciaId])
+}
+
+model Notificacao {
+    id        String   @id @default(cuid())
+    titulo    String
+    mensagem  String   @db.Text
+    lida      Boolean  @default(false)
+    createdAt DateTime @default(now())
+
+    usuarioId String
+    usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+    ocorrenciaId String?
+    ocorrencia   Ocorrencia? @relation(fields: [ocorrenciaId], references: [id], onDelete: SetNull)
+
+    @@index([usuarioId, lida])
 }

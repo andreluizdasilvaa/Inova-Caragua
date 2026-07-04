@@ -70,11 +70,12 @@ export async function registerUser(_: any, formData: FormData) {
     const passwordHash = await bcrypt.hash(password, 12);
     
     try {
-        await prisma.user.create({
+        await prisma.usuario.create({
             data: {
                 email: sanitizedEmail,
-                password: passwordHash,
-                name: sanitizedName
+                senhaHash: passwordHash,
+                nome: sanitizedName,
+                papel: 'MESTRE'
             }
         });
 

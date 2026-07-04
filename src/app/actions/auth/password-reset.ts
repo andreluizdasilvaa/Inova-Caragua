@@ -95,7 +95,7 @@ export async function forgotPassword(
     }
 
     // Procuramos o usuário pelo e-mail no DB
-    const user = await prisma.user.findUnique({
+    const user = await prisma.usuario.findUnique({
         where: { email },
         select: { id: true, email: true },
     })
@@ -214,9 +214,9 @@ export async function resetPassword(
     const passwordHash = await bcrypt.hash(newPassword, 12)
 
     // Atualizamos a senha do usuário no banco de dados usando o Prisma ORM
-    await prisma.user.update({
+    await prisma.usuario.update({
         where: { id: userId },
-        data: { password: passwordHash },
+        data: { senhaHash: passwordHash },
     })
 
     return {

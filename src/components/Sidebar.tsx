@@ -27,7 +27,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const menuItems = [
     { id: 'dashboard', label: 'Painel', icon: LayoutDashboard },
     { id: 'inventario', label: 'Inventário', icon: Package },
-    { id: 'ocurrencias', label: 'Ocorrências', icon: AlertTriangle },
+    { id: 'ocorrencias', label: 'Ocorrências', icon: AlertTriangle },
     { id: 'triagem', label: 'Triagem / Monitoramento', icon: Eye },
     { id: 'lote', label: 'Lote / Cadastro', icon: ShieldAlert },
   ];

@@ -8,7 +8,8 @@ import {
   School, 
   Settings, 
   LogOut,
-  ShieldAlert
+  ShieldAlert,
+  Flame
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -24,12 +25,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
   session, 
   onLogout 
 }) => {
+  const papel = (session?.user as { papel?: string })?.papel
+
   const menuItems = [
     { id: 'dashboard', label: 'Painel', icon: LayoutDashboard },
     { id: 'inventario', label: 'Inventário', icon: Package },
     { id: 'ocorrencias', label: 'Ocorrências', icon: AlertTriangle },
     { id: 'triagem', label: 'Triagem / Monitoramento', icon: Eye },
     { id: 'lote', label: 'Lote / Cadastro', icon: ShieldAlert },
+    // Visível apenas para MESTRE
+    ...(papel === 'MESTRE' ? [{ id: 'mapa-calor', label: 'Mapa de Calor', icon: Flame }] : []),
   ];
 
   return (

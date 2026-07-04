@@ -12,6 +12,7 @@ import { InventarioView } from '@/components/views/InventarioView';
 import { LoteView } from '@/components/views/LoteView';
 import { DetalhesView } from '@/components/views/DetalhesView';
 import { NovaOcorrenciaView } from '@/components/views/NovaOcorrenciaView';
+import { MapaCalorView } from '@/components/views/MapaCalorView';
 import { signOut, useSession } from 'next-auth/react';
 
 export default function AdminDashboard() {
@@ -138,6 +139,10 @@ export default function AdminDashboard() {
                 setView={setView}
                 onRegisterOccurrence={handleRegisterOccurrence}
               />
+            )}
+
+            {currentView === 'mapa-calor' && (
+              <MapaCalorView />
             )}
           </div>
         </main>

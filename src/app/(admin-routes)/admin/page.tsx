@@ -1,31 +1,156 @@
+'use client';
 
-// Pagina protegida (apenas users logados podem acesar)
+import React, { useState } from 'react';
+import { UserSession, Occurrence, Asset } from '@/mockData';
+import { mockOccurrences, mockAssets } from '@/mockData';
+import { Sidebar } from '@/components/Sidebar';
+import { Header } from '@/components/Header';
+import { DashboardView } from '@/components/views/DashboardView';
+import { OcorrenciasView } from '@/components/views/OcorrenciasView';
+import { TriagemView } from '@/components/views/TriagemView';
+import { InventarioView } from '@/components/views/InventarioView';
+import { LoteView } from '@/components/views/LoteView';
+import { DetalhesView } from '@/components/views/DetalhesView';
+import { NovaOcorrenciaView } from '@/components/views/NovaOcorrenciaView';
+import { signOut } from 'next-auth/react';
 
-import { nextAuthOptions } from "@/app/api/auth/[...nextauth]/route"
-import { ButtonLogout } from "@/components/buttonLogout"
-import { getServerSession } from "next-auth"
+export default function AdminDashboard() {
+  // Simulated session (will be replaced with real session from next-auth)
+  const [session] = useState<UserSession>({
+    user: {
+      name: 'Dr. Roberto Dias',
+      email: 'roberto.dias@educacao.gov.br',
+      id: 'usr-99812-admin',
+      role: 'Coordenador de Infraestrutura'
+    }
+  });
 
-export default async function Admin() {
-    const session = await getServerSession(nextAuthOptions)
-    console.log("Session:", session) // Debug
+  // Global Interactive Databases kept in React State
+  const [occurrences, setOccurrences] = useState<Occurrence[]>(mockOccurrences);
+  const [assets, setAssets] = useState<Asset[]>(mockAssets);
 
-    return (
-        <div className="min-h-screen bg-slate-100">
-            <header className="bg-white shadow-md">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex justify-between items-center">
-                    <h1 className="text-3xl font-bold text-gray-800">Painel Admin</h1>
-                    <ButtonLogout />
-                </div>
-            </header>
+  // Active View Router
+  const [currentView, setView] = useState<string>('dashboard');
+  
+  // Selected detail items
+  const [selectedOccurrence, setSelectedOccurrence] = useState<Occurrence | null>(mockOccurrences[0]);
+  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(mockAssets[0]);
 
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                <div className="bg-white rounded-lg shadow-md p-8">
-                    <h2 className="text-2xl font-semibold text-gray-700 mb-4">Bem-vindo!</h2>
-                    <p className="text-gray-600">Olá {session?.user.name}, você está autenticado no sistema.</p>
-                    <p>Email: {session?.user.email}</p>
-                    <p>ID: {session?.user.id}</p>
-                </div>
-            </main>
-        </div>
-    )
+  // Mobile sidebar visibility
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Handlers
+  const handleUpdateOccurrence = (updated: Occurrence) => {
+    setOccurrences((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+    
+    // Also update selectedOccurrence state to sync right panel
+    if (selectedOccurrence?.id === updated.id) {
+      setSelectedOccurrence(updated);
+    }
+  };
+
+  const handleGenerateBatch = (newAssets: Asset[]) => {
+    setAssets((prev) => [...newAssets, ...prev]);
+  };
+
+  const handleRegisterOccurrence = (occurrence: Occurrence) => {
+    setOccurrences((prev) => [occurrence, ...prev]);
+  };
+
+  const handleLogout = () => {
+    signOut({ callbackUrl: '/login' });
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+      
+      {/* Sidebar - Fixed size with responsive toggling */}
+      <div className={`md:block ${sidebarOpen ? 'block' : 'hidden'}`}>
+        <Sidebar 
+          currentView={currentView} 
+          setView={(view) => {
+            setView(view);
+            setSidebarOpen(false);
+          }} 
+          session={session} 
+          onLogout={handleLogout} 
+        />
+      </div>
+
+      {/* Main layout container offsetting the fixed sidebar (left-60) */}
+      <div className="md:pl-60 min-h-screen flex flex-col">
+        
+        {/* Top Navbar */}
+        <Header 
+          session={session} 
+          title="Central de Controle" 
+          onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+        />
+
+        {/* Scrollable screen body */}
+        <main className="flex-1 p-4 mt-12 overflow-y-auto">
+          <div className="max-w-7xl mx-auto">
+            {currentView === 'dashboard' && (
+              <DashboardView 
+                occurrences={occurrences} 
+                assets={assets} 
+                setView={setView}
+                setSelectedOccurrence={setSelectedOccurrence}
+              />
+            )}
+            
+            {currentView === 'ocurrencias' && (
+              <OcorrenciasView 
+                occurrences={occurrences} 
+                setView={setView} 
+                setSelectedOccurrence={setSelectedOccurrence} 
+              />
+            )}
+
+            {currentView === 'triagem' && (
+              <TriagemView 
+                occurrences={occurrences} 
+                selectedOccurrence={selectedOccurrence}
+                setSelectedOccurrence={setSelectedOccurrence}
+                onUpdateOccurrence={handleUpdateOccurrence}
+              />
+            )}
+
+            {currentView === 'inventario' && (
+              <InventarioView 
+                assets={assets} 
+                setView={setView} 
+                setSelectedAsset={setSelectedAsset} 
+              />
+            )}
+
+            {currentView === 'lote' && (
+              <LoteView 
+                assets={assets} 
+                setView={setView} 
+                onGenerateBatch={handleGenerateBatch} 
+              />
+            )}
+
+            {currentView === 'detalhes' && (
+              <DetalhesView 
+                asset={selectedAsset} 
+                setView={setView} 
+              />
+            )}
+
+            {currentView === 'nova-ocorrencia' && (
+              <NovaOcorrenciaView 
+                assets={assets}
+                occurrences={occurrences}
+                setView={setView}
+                onRegisterOccurrence={handleRegisterOccurrence}
+              />
+            )}
+          </div>
+        </main>
+
+      </div>
+    </div>
+  );
 }

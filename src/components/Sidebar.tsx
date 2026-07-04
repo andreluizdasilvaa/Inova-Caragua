@@ -1,12 +1,11 @@
 import React from 'react';
-import { UserSession } from '@/mockData';
+import { Session } from 'next-auth';
 import { 
   LayoutDashboard, 
   Package, 
   AlertTriangle, 
   Eye, 
   School, 
-  Users, 
   Settings, 
   LogOut,
   ShieldAlert
@@ -15,7 +14,7 @@ import {
 interface SidebarProps {
   currentView: string;
   setView: (view: string) => void;
-  session: UserSession;
+  session: Session | null;
   onLogout: () => void;
 }
 
@@ -114,11 +113,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="p-3 border-t border-slate-800 bg-slate-950/20">
         <div className="flex items-center gap-2.5 px-1 py-1 rounded-md">
           <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-xs font-bold border border-slate-700 uppercase text-slate-200">
+<<<<<<< HEAD
             {session.user.nome.substring(0, 2)}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-white truncate leading-none">{session.user.nome}</p>
             <p className="text-xs text-slate-500 truncate mt-0.5">{session.user.email}</p>
+=======
+            {session?.user?.name ? session.user.name.substring(0, 2) : 'US'}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-white truncate leading-none">{session?.user?.name ?? 'Usuário'}</p>
+            <p className="text-xs text-slate-500 truncate mt-0.5">{session?.user?.email ?? ''}</p>
+>>>>>>> e3b1da35c4a071475ed3ace0c1e3494d2369670b
           </div>
         </div>
         

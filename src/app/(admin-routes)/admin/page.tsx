@@ -1,5 +1,6 @@
 "use client";
 
+<<<<<<< HEAD
 import React, { useState } from "react";
 import { UserSession, Occurrence, Asset } from "@/mockData";
 import { mockOccurrences, mockAssets } from "@/mockData";
@@ -26,6 +27,24 @@ export default function AdminDashboard() {
             instituicaoId: null,
         },
     });
+=======
+import React, { useState } from 'react';
+import { Occurrence, Asset } from '@/mockData';
+import { mockOccurrences, mockAssets } from '@/mockData';
+import { Sidebar } from '@/components/Sidebar';
+import { Header } from '@/components/Header';
+import { DashboardView } from '@/components/views/DashboardView';
+import { OcorrenciasView } from '@/components/views/OcorrenciasView';
+import { TriagemView } from '@/components/views/TriagemView';
+import { InventarioView } from '@/components/views/InventarioView';
+import { LoteView } from '@/components/views/LoteView';
+import { DetalhesView } from '@/components/views/DetalhesView';
+import { NovaOcorrenciaView } from '@/components/views/NovaOcorrenciaView';
+import { signOut, useSession } from 'next-auth/react';
+
+export default function AdminDashboard() {
+  const { data: session } = useSession()
+>>>>>>> e3b1da35c4a071475ed3ace0c1e3494d2369670b
 
     // Global Interactive Databases kept in React State
     const [occurrences, setOccurrences] =

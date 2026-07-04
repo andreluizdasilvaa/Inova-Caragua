@@ -246,7 +246,7 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
       
       setTimeout(() => {
         setShowSuccess(false);
-        setView('ocurrencias');
+        setView('ocorrencias');
       }, 2000);
     }, 800);
   };
@@ -270,7 +270,7 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
       {/* Page Header */}
       <div className="flex items-center gap-3">
         <button
-          onClick={() => setView('ocurrencias')}
+          onClick={() => setView('ocorrencias')}
           className="p-2 hover:bg-slate-100 rounded text-slate-600 transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-5 h-5" />

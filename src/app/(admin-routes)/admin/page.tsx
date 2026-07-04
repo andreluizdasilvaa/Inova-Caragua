@@ -99,7 +99,7 @@ export default function AdminDashboard() {
               />
             )}
             
-            {currentView === 'ocurrencias' && (
+            {currentView === 'ocorrencias' && (
               <OcorrenciasView 
                 occurrences={occurrences} 
                 setView={setView} 

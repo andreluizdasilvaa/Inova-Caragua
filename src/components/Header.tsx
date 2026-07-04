@@ -1,9 +1,9 @@
 import React from 'react';
 import { Search, Bell, Mail, HelpCircle, Menu } from 'lucide-react';
-import { UserSession } from '@/mockData';
+import { Session } from 'next-auth';
 
 interface HeaderProps {
-  session: UserSession;
+  session: Session | null;
   title?: string;
   onMenuClick?: () => void;
 }
@@ -63,10 +63,10 @@ export const Header: React.FC<HeaderProps> = ({
         {/* User Headshot Avatar Layout */}
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-200 bg-slate-800 shadow-inner flex items-center justify-center text-xs font-bold text-white uppercase shrink-0">
-            {session.user.name ? session.user.name.substring(0, 2) : 'US'}
+            {session?.user?.name ? session.user.name.substring(0, 2) : 'US'}
           </div>
           <span className="text-sm font-semibold text-slate-700 hidden md:block">
-            {session.user.name ? session.user.name.split(' ')[0] : 'Usuário'}
+            {session?.user?.name ? session.user.name.split(' ')[0] : 'Usuário'}
           </span>
         </div>
       </div>

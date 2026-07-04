@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { UserSession, Occurrence, Asset } from '@/mockData';
+import { Occurrence, Asset } from '@/mockData';
 import { mockOccurrences, mockAssets } from '@/mockData';
 import { Sidebar } from '@/components/Sidebar';
 import { Header } from '@/components/Header';
@@ -12,18 +12,10 @@ import { InventarioView } from '@/components/views/InventarioView';
 import { LoteView } from '@/components/views/LoteView';
 import { DetalhesView } from '@/components/views/DetalhesView';
 import { NovaOcorrenciaView } from '@/components/views/NovaOcorrenciaView';
-import { signOut } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 
 export default function AdminDashboard() {
-  // Simulated session (will be replaced with real session from next-auth)
-  const [session] = useState<UserSession>({
-    user: {
-      name: 'Dr. Roberto Dias',
-      email: 'roberto.dias@educacao.gov.br',
-      id: 'usr-99812-admin',
-      role: 'Coordenador de Infraestrutura'
-    }
-  });
+  const { data: session } = useSession()
 
   // Global Interactive Databases kept in React State
   const [occurrences, setOccurrences] = useState<Occurrence[]>(mockOccurrences);

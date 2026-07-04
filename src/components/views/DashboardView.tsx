@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Occurrence, Asset } from '@/mockData';
+import React, { useState, useMemo } from 'react';
+import { Occurrence, Asset, CategoriaItem } from '@/mockData';
 import { StatsCard, Card, Button } from '@/components/UI';
 import { 
   AlertTriangle, 
   CheckCircle, 
   Wrench, 
-  ShieldAlert, 
   Calendar, 
   ArrowRight,
   TrendingUp,
@@ -22,6 +21,27 @@ interface DashboardViewProps {
   setSelectedOccurrence?: (occ: Occurrence) => void;
 }
 
+const CATEGORIA_LABEL: Record<CategoriaItem, string> = {
+  INFORMATICA: 'Informática',
+  MOBILIARIO: 'Mobiliário',
+  ELETRODOMESTICO: 'Eletrodoméstico',
+  CONECTIVIDADE: 'Conectividade',
+  PREDIAL: 'Predial',
+  OUTRO: 'Outro',
+};
+
+// Map occurrence type to category for grouping
+const getCategoryFromTipo = (tipo: string): string => {
+  const map: Record<string, string> = {
+    REPARO: 'Predial',
+    SERVICO: 'Predial',
+    TROCA: 'Mobiliário',
+    REABASTECIMENTO: 'Eletrodoméstico',
+    OUTRO: 'Outro',
+  };
+  return map[tipo] || 'Outro';
+};
+
 export const DashboardView: React.FC<DashboardViewProps> = ({
   occurrences,
   assets,
@@ -30,25 +50,51 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 }) => {
   const [hoveredSlice, setHoveredSlice] = useState<number | null>(null);
 
-  // Statistics calculations
+  // Statistics calculations based on new status enums
   const totalOccurrences = occurrences.length;
-  const openOccurrences = occurrences.filter(o => o.status === 'Aberto').length;
-  const inProgressOccurrences = occurrences.filter(o => o.status === 'Em Andamento').length;
-  const resolvedOccurrences = occurrences.filter(o => o.status === 'Resolvido').length;
+  const openOccurrences = occurrences.filter(o => o.status === 'ABERTA' || o.status === 'AGUARDANDO_CORRECAO').length;
+  const inProgressOccurrences = occurrences.filter(o => 
+    ['EM_EXECUCAO', 'AGENDADA', 'APROVADA', 'AGUARDANDO_APROVACAO'].includes(o.status)
+  ).length;
+  const resolvedOccurrences = occurrences.filter(o => o.status === 'CONCLUIDA').length;
 
   const totalAssets = assets.length;
-  const operationalAssets = assets.filter(a => a.status === 'Operacional').length;
-  const maintenanceAssets = assets.filter(a => a.status === 'Em Manutenção').length;
-  const damagedAssets = assets.filter(a => a.status === 'Danificado').length;
+  const operationalAssets = assets.filter(a => a.status === 'ATIVO').length;
+  const maintenanceAssets = assets.filter(a => a.status === 'EM_MANUTENCAO').length;
+  const damagedAssets = assets.filter(a => a.status === 'BAIXADO').length;
 
-  // Category analysis for the chart
-  const categories = [
-    { name: 'Encanamento', count: occurrences.filter(o => o.category === 'Encanamento' || o.category === 'Hidráulica').length, color: '#f59e0b' },
-    { name: 'Elétrica', count: occurrences.filter(o => o.category === 'Elétrica').length, color: '#3b82f6' },
-    { name: 'Climatização', count: occurrences.filter(o => o.category === 'Climatização').length, color: '#10b981' },
-    { name: 'Audiovisual', count: occurrences.filter(o => o.category === 'Audiovisual').length, color: '#8b5cf6' },
-    { name: 'Estrutural', count: occurrences.filter(o => o.category === 'Estrutural').length, color: '#ef4444' }
-  ];
+  // Category analysis by tipoSolicitacao
+  const categories = useMemo(() => {
+    const countByTipo: Record<string, number> = {};
+    occurrences.forEach(o => {
+      const label = getCategoryFromTipo(o.tipoSolicitacao);
+      countByTipo[label] = (countByTipo[label] || 0) + 1;
+    });
+    
+    const colors: Record<string, string> = {
+      'Predial': '#f59e0b',
+      'Informática': '#3b82f6',
+      'Mobiliário': '#10b981',
+      'Eletrodoméstico': '#8b5cf6',
+      'Conectividade': '#ef4444',
+      'Outro': '#94a3b8',
+    };
+
+    return Object.entries(countByTipo).map(([name, count]) => ({
+      name,
+      count,
+      color: colors[name] || '#94a3b8',
+    }));
+  }, [occurrences]);
+
+  // Format date for display
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
 
   return (
     <div className="space-y-5">
@@ -64,7 +110,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div className="flex items-center gap-2.5 relative z-10">
           <div className="text-right hidden sm:block">
             <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Hoje é</p>
-            <p className="text-sm font-bold text-slate-200">04 de Julho de 2026</p>
+            <p className="text-sm font-bold text-slate-200">
+              {new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
           </div>
           <div className="p-2 bg-white/10 rounded-md border border-white/10 text-white">
             <Calendar className="w-5 h-5" />
@@ -79,14 +127,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           value={openOccurrences}
           subtitle="Aguardando triagem"
           icon={<AlertTriangle className="w-5 h-5 text-rose-500" />}
-          trend={{ value: '+4 novas', positive: false }}
+          trend={{ value: `${openOccurrences} pendentes`, positive: false }}
         />
         <StatsCard
           title="Em Atendimento"
           value={inProgressOccurrences}
           subtitle="Técnicos em campo"
           icon={<Wrench className="w-5 h-5 text-brand-blue" />}
-          trend={{ value: 'Estável', positive: true }}
+          trend={{ value: 'Em andamento', positive: true }}
         />
         <StatsCard
           title="Ativos em Manutenção"
@@ -96,10 +144,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         />
         <StatsCard
           title="Taxa de Resolução"
-          value={`${Math.round((resolvedOccurrences / totalOccurrences) * 100) || 75}%`}
+          value={`${totalOccurrences ? Math.round((resolvedOccurrences / totalOccurrences) * 100) : 0}%`}
           subtitle="Média histórica de reparos"
           icon={<CheckCircle className="w-5 h-5 text-teal-500" />}
-          trend={{ value: '98% SLA', positive: true }}
+          trend={{ value: `${resolvedOccurrences} concluídas`, positive: true }}
         />
       </div>
 
@@ -111,12 +159,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-base font-bold text-slate-900">Ocorrências por Categoria</h3>
-              <p className="text-sm text-slate-500">Distribuição volumétrica das falhas reportadas</p>
+              <p className="text-sm text-slate-500">Distribuição volumétrica das solicitações</p>
             </div>
-            <span className="flex items-center gap-1 text-xs font-bold text-teal-600 bg-teal-50 px-3 py-1 rounded-full border border-teal-200">
-              <TrendingUp className="w-4 h-4" />
-              Sincronizado
-            </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
@@ -126,72 +170,30 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 {/* Background Ring */}
                 <circle cx="100" cy="100" r="72" fill="transparent" stroke="#f1f5f9" strokeWidth="20" />
                 
-                {/* Interactive Slices */}
-                <circle
-                  cx="100"
-                  cy="100"
-                  r="72"
-                  fill="transparent"
-                  stroke="#f59e0b"
-                  strokeWidth={hoveredSlice === 0 ? 24 : 20}
-                  strokeDasharray={`${(30 * 452) / 100} 452`}
-                  strokeDashoffset="0"
-                  className="transition-all duration-300 cursor-pointer"
-                  onMouseEnter={() => setHoveredSlice(0)}
-                  onMouseLeave={() => setHoveredSlice(null)}
-                />
-                <circle
-                  cx="100"
-                  cy="100"
-                  r="72"
-                  fill="transparent"
-                  stroke="#3b82f6"
-                  strokeWidth={hoveredSlice === 1 ? 24 : 20}
-                  strokeDasharray={`${(25 * 452) / 100} 452`}
-                  strokeDashoffset={`-${(30 * 452) / 100}`}
-                  className="transition-all duration-300 cursor-pointer"
-                  onMouseEnter={() => setHoveredSlice(1)}
-                  onMouseLeave={() => setHoveredSlice(null)}
-                />
-                <circle
-                  cx="100"
-                  cy="100"
-                  r="72"
-                  fill="transparent"
-                  stroke="#10b981"
-                  strokeWidth={hoveredSlice === 2 ? 24 : 20}
-                  strokeDasharray={`${(20 * 452) / 100} 452`}
-                  strokeDashoffset={`-${(55 * 452) / 100}`}
-                  className="transition-all duration-300 cursor-pointer"
-                  onMouseEnter={() => setHoveredSlice(2)}
-                  onMouseLeave={() => setHoveredSlice(null)}
-                />
-                <circle
-                  cx="100"
-                  cy="100"
-                  r="72"
-                  fill="transparent"
-                  stroke="#8b5cf6"
-                  strokeWidth={hoveredSlice === 3 ? 24 : 20}
-                  strokeDasharray={`${(15 * 452) / 100} 452`}
-                  strokeDashoffset={`-${(75 * 452) / 100}`}
-                  className="transition-all duration-300 cursor-pointer"
-                  onMouseEnter={() => setHoveredSlice(3)}
-                  onMouseLeave={() => setHoveredSlice(null)}
-                />
-                <circle
-                  cx="100"
-                  cy="100"
-                  r="72"
-                  fill="transparent"
-                  stroke="#ef4444"
-                  strokeWidth={hoveredSlice === 4 ? 24 : 20}
-                  strokeDasharray={`${(10 * 452) / 100} 452`}
-                  strokeDashoffset={`-${(90 * 452) / 100}`}
-                  className="transition-all duration-300 cursor-pointer"
-                  onMouseEnter={() => setHoveredSlice(4)}
-                  onMouseLeave={() => setHoveredSlice(null)}
-                />
+                {categories.map((cat, idx) => {
+                  const total = categories.reduce((s, c) => s + c.count, 0);
+                  const pct = total ? (cat.count / total) * 100 : 0;
+                  let offset = 0;
+                  for (let i = 0; i < idx; i++) {
+                    offset += (categories[i].count / total) * 452;
+                  }
+                  return (
+                    <circle
+                      key={cat.name}
+                      cx="100"
+                      cy="100"
+                      r="72"
+                      fill="transparent"
+                      stroke={cat.color}
+                      strokeWidth={hoveredSlice === idx ? 24 : 20}
+                      strokeDasharray={`${(pct * 452) / 100} 452`}
+                      strokeDashoffset={`-${offset}`}
+                      className="transition-all duration-300 cursor-pointer"
+                      onMouseEnter={() => setHoveredSlice(idx)}
+                      onMouseLeave={() => setHoveredSlice(null)}
+                    />
+                  );
+                })}
               </svg>
 
               {/* Center Text displaying hover information */}
@@ -236,11 +238,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <Card className="p-5 flex flex-col justify-between space-y-4">
           <div>
             <h3 className="text-base font-bold text-slate-900">Alertas de Triagem</h3>
-            <p className="text-sm text-slate-500">Últimos relatórios necessitando aprovação</p>
+            <p className="text-sm text-slate-500">Últimos chamados necessitando análise</p>
           </div>
 
           <div className="space-y-3 overflow-y-auto max-h-[260px] pr-1">
-            {occurrences.slice(0, 3).map((occ) => (
+            {occurrences
+              .filter(o => o.status === 'ABERTA' || o.status === 'AGUARDANDO_APROVACAO')
+              .slice(0, 3)
+              .map((occ) => (
               <div 
                 key={occ.id} 
                 onClick={() => {
@@ -255,22 +260,25 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               >
                 <div className="flex justify-between items-center mb-1.5">
                   <span className="font-mono text-xs font-bold text-slate-500 bg-slate-150 px-2 py-0.5 rounded">
-                    {occ.id}
+                    #{occ.numero}
                   </span>
                   <span className="text-xs text-slate-400 flex items-center gap-1 font-medium">
                     <Clock className="w-3 h-3 text-slate-300" />
-                    {occ.date}
+                    {formatDate(occ.createdAt)}
                   </span>
                 </div>
                 <h4 className="text-sm font-bold text-slate-800 line-clamp-1 group-hover:text-brand-blue transition-colors">
-                  {occ.description}
+                  {occ.titulo}
                 </h4>
                 <div className="flex items-center gap-1 text-xs text-slate-500 mt-2 font-medium">
                   <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                  <span className="truncate">{occ.school}</span>
+                  <span className="truncate">{occ.localizacaoDescricao || 'Local não especificado'}</span>
                 </div>
               </div>
             ))}
+            {occurrences.filter(o => o.status === 'ABERTA').length === 0 && (
+              <p className="text-sm text-slate-400 text-center py-4">Nenhum chamado pendente</p>
+            )}
           </div>
 
           <Button 

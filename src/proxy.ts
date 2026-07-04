@@ -30,93 +30,53 @@ import { NextResponse } from "next/server"
 import type { NextRequestWithAuth } from "next-auth/middleware"
 
 /**
+ * Mapa de rotas → papéis permitidos
+ * Adicione novas rotas e papéis aqui conforme o sistema crescer
+ */
+const roleRouteMap: Record<string, string[]> = {
+    "/admin": ["MESTRE"],
+    "/school": ["ESCOLA"],
+    "/triagem": ["TRIAGEM"],
+}
+
+/**
  * Função principal do middleware
  * Executa APENAS se o usuário passou na verificação do callback "authorized"
- * Use para lógica adicional como logging, validações extras, ou modificar response
  */
 function middleware(req: NextRequestWithAuth) {
-    // Extrair informações úteis da requisição
     const token = req.nextauth.token
     const path = req.nextUrl.pathname
-    
-    // ===== EXEMPLOS DE DADOS DISPONÍVEIS NO TOKEN =====
-    // token.sub       → ID do usuário
-    // token.email     → Email do usuário (adicionado no callback jwt)
-    // token.name      → Nome do usuário(adicionado no callback jwt)
-    // token.userId    → ID customizado (adicionado no callback jwt)
-    // token.iat       → Data de criação do token
-    // token.exp       → Data de expiração do token
 
-    console.log("Usuário autenticado acessou rota protegida")
-    console.log(`Rota: ${path}`)
-    console.log(`Email: ${token?.email}`)
-    
-    // ===== EXEMPLOS DE LÓGICA QUE VOCÊ PODE ADICIONAR =====
-    
-    // 1. VALIDAR ROLES/PERMISSÕES
-    // if (path.startsWith("/admin") && token?.role !== "admin") {
-    //   return NextResponse.redirect(new URL("/unauthorized", req.url))
-    // }
-    
-    // 2. BLOQUEAR ACESSO A ROTAS ESPECÍFICAS
-    // if (path === "/admin/users/delete") {
-    //   console.warn("❌ Tentativa não autorizada de deletar usuários")
-    //   return NextResponse.redirect(new URL("/forbidden", req.url))
-    // }
-    
-    // 3. REGISTRAR AUDITORIA
-    // await auditLog({
-    //   userId: token?.sub,
-    //   action: "page_access",
-    //   resource: path,
-    //   timestamp: new Date()
-    // })
-    
-    // 4. MODIFICAR HEADERS DA RESPOSTA
-    // const response = NextResponse.next()
-    // response.headers.set("X-User-ID", token?.sub as string)
-    // return response
-    
-    // Permitir a requisição continuar para a página
+    // Encontrar qual rota protegida corresponde ao path atual
+    const matchedRoute = Object.keys(roleRouteMap).find((route) =>
+        path.startsWith(route)
+    )
+
+    if (matchedRoute) {
+        const allowedRoles = roleRouteMap[matchedRoute]
+        const userRole = token?.papel
+
+        // Se o papel do usuário não está na lista de permitidos → redireciona
+        if (!userRole || !allowedRoles.includes(userRole)) {
+            console.warn(
+                `❌ Acesso negado: ${token?.email} (papel: ${userRole}) tentou acessar ${path}`
+            )
+            return NextResponse.redirect(new URL("/login", req.url))
+        }
+    }
+
     return NextResponse.next()
 }
 
 export default withAuth(middleware, {
-    /**
-     * ===== CALLBACKS =====
-     * Funções que controlam o fluxo de autenticação
-     */
     callbacks: {
-        authorized: ({ token, req }) => {
-            // ===== EXEMPLOS DE VALIDAÇÕES =====
-            
-            // 1. APENAS USUÁRIOS AUTENTICADOS
-            // return !!token
-            
-            // 2. APENAS ADMINS
-            // return token?.role === "admin"
-            
-            // 3. APENAS EMAIL ESPECÍFICO
-            // return token?.email === "admin@exemplo.com"
-            
-            // 4. EMAIL VERIFICADO
-            // return token?.email === "teste@teste.com" && token?.emailVerified === true
-            
-            // 5. VALIDAR MÚLTIPLAS CONDIÇÕES
-            // if (!token) return false
-            // if (token.role !== "admin") return false
-            // if (token.suspended === true) return false
-            // return true
-            
-            // ATUAL: Qualquer usuário autenticado (tem token) pode acessar
+        authorized: ({ token }) => {
+            // Qualquer usuário autenticado (tem token) pode passar para o middleware
             return !!token
         },
     },
     pages: {
-        // Rota de login (quando usuário não autenticado tenta acessar rota protegida)
         signIn: "/login",
-        // Opcional: página de erro
-        // error: "/auth/error",
     },
 })
 
@@ -124,39 +84,14 @@ export default withAuth(middleware, {
  * ===== MATCHER =====
  * Define QUAIS rotas este middleware deve proteger
  * Usa padrão de glob pattern do Next.js
- * 
- * A requisição só passa pelo middleware se bater em um desses padrões
  */
 export const config = {
     matcher: [
         // Protege TODA a rota /admin e subrotas
         "/admin/:path*",
-        
-        // EXEMPLOS DE OUTROS PADRÕES:
-        // "/dashboard",                    // Apenas /dashboard
-        // "/dashboard/:path*",             // /dashboard e todas as subrotas
-        // "/api/protected/:path*",         // Protege API routes
-        // "/(admin|dashboard)/:path*",     // Múltiplas rotas com OU
-        // "/((?!login|register|public).*)" // Protege TUDO exceto login, register, public
-        
-        // ROTAS QUE NÃO DEVEM SER PROTEGIDAS (deixe comentado):
-        // - /login
-        // - /register
-        // - /api/auth/*  (Next-auth já protege automaticamente)
-        // - /public/*
-    ]
+        // Protege TODA a rota /school e subrotas
+        "/school/:path*",
+        // Protege TODA a rota /triagem e subrotas
+        "/triagem/:path*",
+    ],
 }
-
-/**
- * ===== NOTAS DE SEGURANÇA =====
- *
- * - Usar NEXTAUTH_SECRET robusta (mínimo 32 caracteres)
- * - Validar token no servidor SEMPRE
- * - Usar matcher para proteger rotas sensíveis
- * - Redirecionar para /login se não autenticado
- * 
- * ===== LIMITAÇÕES CONHECIDAS =====
- * - Middleware roda APENAS com estratégia JWT
- * - Para database sessions, use getServerSession() em Server Components
- * - Não pode acessar banco de dados direto no middleware (edge runtime)
- */

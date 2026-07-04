@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Occurrence } from '@/mockData';
-import { Card, Button, PriorityBadge, StatusBadge } from '@/components/UI';
-import { Search, Eye, Edit, SlidersHorizontal, CheckCircle } from 'lucide-react';
+import { Occurrence, StatusOcorrencia, Prioridade, TipoSolicitacao } from '@/mockData';
+import { Card, Button, PriorityBadge, StatusBadge, TIPO_SOLICITACAO_LABEL } from '@/components/UI';
+import { Search, Eye, Edit, SlidersHorizontal } from 'lucide-react';
 
 interface OcorrenciasViewProps {
   occurrences: Occurrence[];
@@ -18,41 +18,73 @@ export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
 }) => {
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedPriority, setSelectedPriority] = useState('Todas');
-  const [selectedCategory, setSelectedCategory] = useState('Todas');
-  const [selectedStatus, setSelectedStatus] = useState('Todas');
-  const [selectedSchool, setSelectedSchool] = useState('Todas');
+  const [selectedPriority, setSelectedPriority] = useState<string>('Todas');
+  const [selectedStatus, setSelectedStatus] = useState<string>('Todas');
+  const [selectedTipo, setSelectedTipo] = useState<string>('Todas');
 
   // Available unique options for dropdowns
-  const priorities = ['Todas', 'Alta', 'Média', 'Baixa'];
-  const categories = ['Todas', 'Encanamento', 'Hidráulica', 'Elétrica', 'Estrutural', 'Climatização', 'Audiovisual', 'Segurança'];
-  const statuses = ['Todas', 'Aberto', 'Em Andamento', 'Resolvido'];
-  const schools = ['Todas', 'Central High', 'North Elementary', 'Westside Middle', 'E.M. Machado de Assis', 'C.E. Cora Coralina', 'E.M. Monteiro Lobato'];
+  const prioridades: string[] = ['Todas', 'URGENTE', 'ALTA', 'MEDIA', 'BAIXA'];
+  const statusList: StatusOcorrencia[] = ['ABERTA', 'AGUARDANDO_CORRECAO', 'AGUARDANDO_APROVACAO', 'APROVADA', 'AGENDADA', 'EM_EXECUCAO', 'CONCLUIDA', 'RECUSADA', 'CANCELADA'];
+  const tiposList: TipoSolicitacao[] = ['SERVICO', 'REPARO', 'TROCA', 'REABASTECIMENTO', 'OUTRO'];
+
+  const PRIORIDADE_LABEL: Record<string, string> = {
+    URGENTE: 'Urgente',
+    ALTA: 'Alta',
+    MEDIA: 'Média',
+    BAIXA: 'Baixa',
+  };
+
+  const STATUS_LABEL: Record<StatusOcorrencia, string> = {
+    ABERTA: 'Aberta',
+    AGUARDANDO_CORRECAO: 'Aguardando Correção',
+    AGUARDANDO_APROVACAO: 'Aguardando Aprovação',
+    APROVADA: 'Aprovada',
+    AGENDADA: 'Agendada',
+    EM_EXECUCAO: 'Em Execução',
+    CONCLUIDA: 'Concluída',
+    RECUSADA: 'Recusada',
+    CANCELADA: 'Cancelada',
+  };
+
+  const TIPO_LABEL: Record<TipoSolicitacao, string> = {
+    SERVICO: 'Serviço',
+    REPARO: 'Reparo',
+    TROCA: 'Troca',
+    REABASTECIMENTO: 'Reabastecimento',
+    OUTRO: 'Outro',
+  };
 
   // Handle Filtering
   const filteredOccurrences = useMemo(() => {
     return occurrences.filter((occ) => {
+      const q = searchQuery.toLowerCase();
       const matchesSearch = 
-        occ.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        occ.school.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        occ.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        occ.description.toLowerCase().includes(searchQuery.toLowerCase());
+        !q ||
+        `#${occ.numero}`.includes(q) ||
+        occ.titulo.toLowerCase().includes(q) ||
+        occ.descricao.toLowerCase().includes(q);
 
-      const matchesPriority = selectedPriority === 'Todas' || occ.priority === selectedPriority;
-      const matchesCategory = selectedCategory === 'Todas' || occ.category === selectedCategory;
+      const matchesPriority = selectedPriority === 'Todas' || occ.prioridade === selectedPriority;
       const matchesStatus = selectedStatus === 'Todas' || occ.status === selectedStatus;
-      const matchesSchool = selectedSchool === 'Todas' || occ.school === selectedSchool;
+      const matchesTipo = selectedTipo === 'Todas' || occ.tipoSolicitacao === selectedTipo;
 
-      return matchesSearch && matchesPriority && matchesCategory && matchesStatus && matchesSchool;
+      return matchesSearch && matchesPriority && matchesStatus && matchesTipo;
     });
-  }, [occurrences, searchQuery, selectedPriority, selectedCategory, selectedStatus, selectedSchool]);
+  }, [occurrences, searchQuery, selectedPriority, selectedStatus, selectedTipo]);
+
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
 
   const handleClearFilters = () => {
     setSearchQuery('');
     setSelectedPriority('Todas');
-    setSelectedCategory('Todas');
     setSelectedStatus('Todas');
-    setSelectedSchool('Todas');
+    setSelectedTipo('Todas');
   };
 
   return (
@@ -79,7 +111,7 @@ export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
           <span>Painel de Filtros Avançados</span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* Priority dropdown */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Prioridade</label>
@@ -88,19 +120,11 @@ export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
               onChange={(e) => setSelectedPriority(e.target.value)}
               className="w-full text-sm rounded border border-slate-200 bg-slate-50 py-2 px-3 outline-none focus:ring-1 focus:ring-brand-blue transition-all text-slate-700 font-semibold"
             >
-              {priorities.map(p => <option key={p} value={p}>{p === 'Todas' ? 'Todas as Prioridades' : p}</option>)}
-            </select>
-          </div>
-
-          {/* Category dropdown */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Categoria</label>
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full text-sm rounded border border-slate-200 bg-slate-50 py-2 px-3 outline-none focus:ring-1 focus:ring-brand-blue transition-all text-slate-700 font-semibold"
-            >
-              {categories.map(c => <option key={c} value={c}>{c === 'Todas' ? 'Todas as Categorias' : c}</option>)}
+              {prioridades.map(p => (
+                <option key={p} value={p}>
+                  {p === 'Todas' ? 'Todas as Prioridades' : PRIORIDADE_LABEL[p] || p}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -112,19 +136,25 @@ export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
               onChange={(e) => setSelectedStatus(e.target.value)}
               className="w-full text-sm rounded border border-slate-200 bg-slate-50 py-2 px-3 outline-none focus:ring-1 focus:ring-brand-blue transition-all text-slate-700 font-semibold"
             >
-              {statuses.map(s => <option key={s} value={s}>{s === 'Todas' ? 'Todos os Status' : s}</option>)}
+              <option value="Todas">Todos os Status</option>
+              {statusList.map(s => (
+                <option key={s} value={s}>{STATUS_LABEL[s]}</option>
+              ))}
             </select>
           </div>
 
-          {/* School dropdown */}
+          {/* Tipo dropdown */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Localização / Unidade</label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tipo de Solicitação</label>
             <select
-              value={selectedSchool}
-              onChange={(e) => setSelectedSchool(e.target.value)}
+              value={selectedTipo}
+              onChange={(e) => setSelectedTipo(e.target.value)}
               className="w-full text-sm rounded border border-slate-200 bg-slate-50 py-2 px-3 outline-none focus:ring-1 focus:ring-brand-blue transition-all text-slate-700 font-semibold"
             >
-              {schools.map(sc => <option key={sc} value={sc}>{sc === 'Todas' ? 'Todas as Escolas' : sc}</option>)}
+              <option value="Todas">Todos os Tipos</option>
+              {tiposList.map(t => (
+                <option key={t} value={t}>{TIPO_LABEL[t]}</option>
+              ))}
             </select>
           </div>
         </div>
@@ -135,7 +165,7 @@ export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Pesquisar por ID, escola..."
+              placeholder="Pesquisar por título, número, descrição..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full text-sm rounded border border-slate-200 bg-slate-50 pl-10 pr-3 py-2 focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-blue transition-all placeholder:text-slate-400"
@@ -145,9 +175,6 @@ export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
           <div className="flex gap-2 w-full sm:w-auto shrink-0 justify-end">
             <Button variant="outline" size="sm" onClick={handleClearFilters} className="text-xs py-1.5 px-3">
               Limpar Filtros
-            </Button>
-            <Button variant="primary" size="sm" onClick={() => {}} className="bg-slate-800 hover:bg-slate-900 text-xs py-1.5 px-3">
-              Aplicar Filtros
             </Button>
           </div>
         </div>
@@ -159,9 +186,9 @@ export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
           <table className="w-full text-left border-collapse font-sans">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider">
-                <th className="py-3 px-4">ID</th>
-                <th className="py-3 px-4">Escola</th>
-                <th className="py-3 px-4">Categoria</th>
+                <th className="py-3 px-4">Nº</th>
+                <th className="py-3 px-4">Título</th>
+                <th className="py-3 px-4">Tipo</th>
                 <th className="py-3 px-4">Prioridade</th>
                 <th className="py-3 px-4">Status</th>
                 <th className="py-3 px-4">Data</th>
@@ -175,29 +202,29 @@ export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
                     key={occ.id} 
                     className="hover:bg-slate-50/70 transition-colors duration-150"
                   >
-                    <td className="py-3 px-4 font-mono text-sm font-bold text-slate-500">{occ.id}</td>
-                    <td className="py-3 px-4 font-bold text-slate-900">{occ.school}</td>
-                    <td className="py-3 px-4 text-slate-500">{occ.category}</td>
+                    <td className="py-3 px-4 font-mono text-sm font-bold text-slate-500">#{occ.numero}</td>
+                    <td className="py-3 px-4 font-bold text-slate-900 max-w-[200px] truncate" title={occ.titulo}>{occ.titulo}</td>
+                    <td className="py-3 px-4 text-slate-500">{TIPO_LABEL[occ.tipoSolicitacao]}</td>
                     <td className="py-3 px-4">
-                      <PriorityBadge priority={occ.priority} />
+                      <PriorityBadge priority={occ.prioridade} />
                     </td>
                     <td className="py-3 px-4">
                       <StatusBadge status={occ.status} />
                     </td>
-                    <td className="py-3 px-4 text-slate-500">{occ.date}</td>
+                    <td className="py-3 px-4 text-slate-500">{formatDate(occ.createdAt)}</td>
                     <td className="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
                       <button
                         onClick={() => {
                           setSelectedOccurrence(occ);
                           setView('triagem');
                         }}
-                        title="Ver detalhes da triagem"
+                        title="Ver detalhes"
                         className="p-1.5 text-brand-blue hover:text-white hover:bg-brand-blue rounded transition-all duration-150 inline-flex items-center cursor-pointer"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => alert(`Editar chamado ${occ.id}`)}
+                        onClick={() => alert(`Editar chamado #${occ.numero}`)}
                         title="Editar chamado"
                         className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-all duration-150 inline-flex items-center cursor-pointer"
                       >

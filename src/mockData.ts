@@ -10,6 +10,19 @@ import {
   TipoAnexo 
 } from '../src/generated/client';
 
+// Re-export generated enums so components can use them
+export type { 
+  Papel, 
+  CargoEscolar, 
+  CategoriaItem, 
+  EstadoConservacao, 
+  StatusItem, 
+  TipoSolicitacao, 
+  Prioridade, 
+  StatusOcorrencia, 
+  TipoAnexo 
+};
+
 export interface UserSession {
   user: {
     id: string;

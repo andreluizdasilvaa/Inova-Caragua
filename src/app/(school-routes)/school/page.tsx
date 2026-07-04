@@ -1,22 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { UserSession, Occurrence, Asset, mockOccurrences, mockAssets } from '@/mockData';
 import { Sidebar } from '@/components/Sidebar';
 import { Header } from '@/components/Header';
 import { SchoolDashboardView } from '@/components/views/SchoolDashboardView';
-import { signOut } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 
 export default function SchoolPage() {
-  // Simulated session (will be replaced with real session from next-auth)
-  const [session] = useState<UserSession>({
-    user: {
-      name: 'Escola Municipal',
-      email: 'escola@educacao.gov.br',
-      id: 'usr-school-001',
-      role: 'Unidade Escolar'
-    }
-  });
+  const { data: session } = useSession()
 
   // Mobile sidebar visibility
   const [sidebarOpen, setSidebarOpen] = useState(false);

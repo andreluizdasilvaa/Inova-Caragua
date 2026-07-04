@@ -24,39 +24,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   session, 
   onLogout 
 }) => {
-  const papel = session.user.papel;
-
-  // Define menu items based on user role
-  const menuItems = (() => {
-    // MESTRE: full access
-    if (papel === 'MESTRE') {
-      return [
-        { id: 'dashboard', label: 'Painel', icon: LayoutDashboard },
-        { id: 'inventario', label: 'Inventário', icon: Package },
-        { id: 'ocorrencias', label: 'Ocorrências', icon: AlertTriangle },
-        { id: 'triagem', label: 'Triagem / Monitoramento', icon: Eye },
-        { id: 'lote', label: 'Lote / Cadastro', icon: ShieldAlert },
-      ];
-    }
-    
-    // ESCOLA: no triagem, no inventario, no lote
-    if (papel === 'ESCOLA') {
-      return [
-        { id: 'dashboard', label: 'Painel', icon: LayoutDashboard },
-        { id: 'ocorrencias', label: 'Ocorrências', icon: AlertTriangle },
-      ];
-    }
-    
-    // TRIAGEM: no dashboard, no inventario, no lote
-    if (papel === 'TRIAGEM') {
-      return [
-        { id: 'triagem', label: 'Triagem / Monitoramento', icon: Eye },
-        { id: 'ocorrencias', label: 'Ocorrências', icon: AlertTriangle },
-      ];
-    }
-
-    return [];
-  })();
+  const menuItems = [
+    { id: 'dashboard', label: 'Painel', icon: LayoutDashboard },
+    { id: 'inventario', label: 'Inventário', icon: Package },
+    { id: 'ocorrencias', label: 'Ocorrências', icon: AlertTriangle },
+    { id: 'triagem', label: 'Triagem / Monitoramento', icon: Eye },
+    { id: 'lote', label: 'Lote / Cadastro', icon: ShieldAlert },
+  ];
 
   return (
     <aside className="w-60 bg-slate-900 border-r border-slate-800 text-slate-100 flex flex-col h-screen fixed left-0 top-0 z-20 shrink-0 font-sans">
@@ -113,19 +87,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="p-3 border-t border-slate-800 bg-slate-950/20">
         <div className="flex items-center gap-2.5 px-1 py-1 rounded-md">
           <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-xs font-bold border border-slate-700 uppercase text-slate-200">
-<<<<<<< HEAD
-            {session.user.nome.substring(0, 2)}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-white truncate leading-none">{session.user.nome}</p>
-            <p className="text-xs text-slate-500 truncate mt-0.5">{session.user.email}</p>
-=======
             {session?.user?.name ? session.user.name.substring(0, 2) : 'US'}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-white truncate leading-none">{session?.user?.name ?? 'Usuário'}</p>
             <p className="text-xs text-slate-500 truncate mt-0.5">{session?.user?.email ?? ''}</p>
->>>>>>> e3b1da35c4a071475ed3ace0c1e3494d2369670b
           </div>
         </div>
         

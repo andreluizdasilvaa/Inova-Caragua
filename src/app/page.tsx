@@ -1,6 +1,27 @@
+import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
+import { nextAuthOptions } from "./api/auth/[...nextauth]/route";
 import Link from 'next/link';
 
-export default function Home() {
+export default async function Home() {
+    const session = await getServerSession(nextAuthOptions);
+
+    // Se o usuário já está autenticado, redireciona com base no papel
+    if (session?.user?.papel) {
+
+        switch (session.user.papel) {
+            case 'MESTRE':
+                redirect('/admin');
+            case 'ESCOLA':
+                redirect('/school');
+            case 'TRIAGEM':
+                redirect('/triagem');
+            default:
+                redirect('/login');
+        }
+    }
+
+    // Usuário não autenticado → tela de boas-vindas
     return (
         <main className="min-h-screen bg-indigo-100 flex items-center justify-center p-4">
             <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">

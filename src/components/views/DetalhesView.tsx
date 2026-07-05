@@ -63,6 +63,7 @@ export const DetalhesView: React.FC<DetalhesViewProps> = ({
     createdAt: new Date('2023-03-15T08:00:00.000Z'),
     updatedAt: new Date('2023-03-15T08:00:00.000Z'),
     setorId: 'setor_biblioteca',
+    instituicaoId: 'inst_central_high',
     cadastradoPorId: 'user_mestre'
   };
 

@@ -29,6 +29,7 @@ export async function authenticate({
             email: user.email,
             name: user.nome,
             papel: user.papel,
+            instituicaoId: user.instituicaoId,
         };
     } catch {
         return null;

@@ -79,6 +79,7 @@ export interface Asset {
   createdAt: Date;
   updatedAt: Date;
   setorId: string;
+  instituicaoId: string;
   cadastradoPorId?: string | null;
 }
 
@@ -189,7 +190,7 @@ export const mockOccurrences: Occurrence[] = [
     numeroPatrimonioTexto: null,
     createdAt: new Date('2026-07-04T08:30:00.000Z'),
     updatedAt: new Date('2026-07-04T08:30:00.000Z'),
-    instituicaoId: 'inst_machado_assis',
+    instituicaoId: 'cmr6vwyqj0002w8vpvnzxa02s',
     setorId: 'setor_laboratorio',
     itemId: 'PAT-2022-402',
     criadoPorId: 'user_sandra_escola',
@@ -246,7 +247,7 @@ export const mockOccurrences: Occurrence[] = [
     numeroPatrimonioTexto: null,
     createdAt: new Date('2026-07-04T12:10:00.000Z'),
     updatedAt: new Date('2026-07-04T12:10:00.000Z'),
-    instituicaoId: 'inst_machado_assis',
+    instituicaoId: 'cmr6vwyqj0002w8vpvnzxa02s',
     setorId: 'setor_sala12',
     itemId: 'PAT-2023-001',
     criadoPorId: 'user_sandra_escola',
@@ -272,6 +273,7 @@ export const mockAssets: Asset[] = [
     createdAt: new Date('2023-03-15T08:00:00.000Z'),
     updatedAt: new Date('2023-03-15T08:00:00.000Z'),
     setorId: 'setor_biblioteca',
+    instituicaoId: 'inst_central_high',
     cadastradoPorId: 'user_mestre'
   },
   {
@@ -290,6 +292,7 @@ export const mockAssets: Asset[] = [
     createdAt: new Date('2023-05-10T08:00:00.000Z'),
     updatedAt: new Date('2023-05-10T08:00:00.000Z'),
     setorId: 'setor_sala12',
+    instituicaoId: 'cmr6vwyqj0002w8vpvnzxa02s',
     cadastradoPorId: 'user_mestre'
   },
   {
@@ -308,6 +311,7 @@ export const mockAssets: Asset[] = [
     createdAt: new Date('2022-10-12T08:00:00.000Z'),
     updatedAt: new Date('2022-10-12T08:00:00.000Z'),
     setorId: 'setor_laboratorio',
+    instituicaoId: 'cmr6vwyqj0002w8vpvnzxa02s',
     cadastradoPorId: 'user_mestre'
   },
   {
@@ -326,6 +330,7 @@ export const mockAssets: Asset[] = [
     createdAt: new Date('2024-01-22T08:00:00.000Z'),
     updatedAt: new Date('2024-01-22T08:00:00.000Z'),
     setorId: 'setor_patio',
+    instituicaoId: 'inst_cora_coralina',
     cadastradoPorId: 'user_mestre'
   },
   {
@@ -344,6 +349,7 @@ export const mockAssets: Asset[] = [
     createdAt: new Date('2021-06-14T08:00:00.000Z'),
     updatedAt: new Date('2021-06-14T08:00:00.000Z'),
     setorId: 'setor_corredor_a',
+    instituicaoId: 'inst_monteiro_lobato',
     cadastradoPorId: 'user_mestre'
   }
 ];
@@ -384,7 +390,7 @@ export const mockAssetHistory: Record<string, AssetHistory[]> = {
 
 export const mockSchoolStats: SchoolStats[] = [
   {
-    instituicaoId: 'inst_machado_assis',
+    instituicaoId: 'cmr6vwyqj0002w8vpvnzxa02s',
     nomeInstituicao: 'E.M. Machado de Assis',
     openCount: 12,
     similarCases30d: 3

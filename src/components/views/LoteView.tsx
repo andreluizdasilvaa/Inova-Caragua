@@ -16,12 +16,14 @@ interface LoteViewProps {
   assets: Asset[];
   setView: (view: string) => void;
   onGenerateBatch: (newAssets: Asset[]) => void;
+  instituicaoId?: string;
 }
 
 export const LoteView: React.FC<LoteViewProps> = ({
   assets,
   setView,
-  onGenerateBatch
+  onGenerateBatch,
+  instituicaoId
 }) => {
   const [prefix, setPrefix] = useState('PAT-2026-');
   const [quantity, setQuantity] = useState(6);
@@ -67,6 +69,7 @@ export const LoteView: React.FC<LoteViewProps> = ({
       createdAt: new Date(),
       updatedAt: new Date(),
       setorId: 'setor_padrao',
+      instituicaoId: instituicaoId || 'inst_padrao',
       cadastradoPorId: null,
     }));
 

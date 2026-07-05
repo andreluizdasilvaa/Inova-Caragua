@@ -107,6 +107,7 @@ export const InventarioView: React.FC<InventarioViewProps> = ({
                 createdAt: new Date(),
                 updatedAt: new Date(),
                 setorId: 'setor_padrao',
+                instituicaoId: 'inst_padrao',
                 cadastradoPorId: null,
               };
               setSelectedAsset(newAsset);

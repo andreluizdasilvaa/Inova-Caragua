@@ -35,7 +35,7 @@ export async function GET(request: Request) {
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
       setorId: item.setorId,
-      instituicaoId: item.setor.instituicaoId,
+      instituicaoId: item.setor?.instituicaoId,
       cadastradoPorId: item.cadastradoPorId,
     }));
 

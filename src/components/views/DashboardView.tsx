@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { Occurrence, Asset, CategoriaItem } from '@/types';
 import { StatsCard, Card, Button } from '@/components/UI';
+import { formatDate } from '@/lib/utils/timestamp';
 import { 
   AlertTriangle, 
   CheckCircle, 
@@ -87,13 +88,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     }));
   }, [occurrences]);
 
-  // Format date for display
-  const formatDate = (date: Date | string | null | undefined) => {
-    if (!date) return '—';
-    const d = new Date(date);
-    if (isNaN(d.getTime())) return '—';
-    return d.toLocaleDateString('pt-BR');
-  };
 
   return (
     <div className="space-y-5">

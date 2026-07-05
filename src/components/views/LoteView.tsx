@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Asset, CategoriaItem, EstadoConservacao, StatusItem } from '@/types';
-import { mockSchoolStats } from '@/mockData';
+import { api } from '@/lib/api';
 import { Card, Button } from '@/components/UI';
 import { 
   ArrowLeft, 
@@ -59,16 +59,26 @@ export const LoteView: React.FC<LoteViewProps> = ({
   const [instituicaoId, setInstituicaoId] = useState(propInstituicaoId || '');
   const [showSchoolDropdown, setShowSchoolDropdown] = useState(false);
   const [schoolSearch, setSchoolSearch] = useState('');
+  const [schools, setSchools] = useState<any[]>([]);
 
   const isMestre = userRole === 'MESTRE';
 
-  const selectedSchool = mockSchoolStats.find(s => s.instituicaoId === instituicaoId);
+  // Fetch schools from API
+  useEffect(() => {
+    if (isMestre) {
+      api.instituicoes.list()
+        .then(data => setSchools(Array.isArray(data) ? data : []))
+        .catch(() => setSchools([]));
+    }
+  }, [isMestre]);
+
+  const selectedSchool = schools.find((s: any) => s.id === instituicaoId);
   const selectedSchoolName = isMestre 
-    ? (selectedSchool?.nomeInstituicao || '')
+    ? (selectedSchool?.nome || '')
     : (instituicaoNome || 'Minha Escola');
 
-  const filteredSchools = mockSchoolStats.filter(s => 
-    s.nomeInstituicao.toLowerCase().includes(schoolSearch.toLowerCase())
+  const filteredSchools = schools.filter((s: any) => 
+    s.nome.toLowerCase().includes(schoolSearch.toLowerCase())
   );
 
   const previewSequence = useMemo(() => {
@@ -90,7 +100,7 @@ export const LoteView: React.FC<LoteViewProps> = ({
   const handleBatchGenerate = () => {
     const resolvedInstituicaoId = isMestre ? instituicaoId : (propInstituicaoId || 'inst_padrao');
 
-    const batch: Asset[] = previewSequence.map((pat, idx) => ({
+    const batch: Asset[] = previewSequence.map((pat) => ({
       id: pat,
       nome: assetName,
       categoria: assetCategory,
@@ -112,9 +122,9 @@ export const LoteView: React.FC<LoteViewProps> = ({
 
     onGenerateBatch(batch);
     setShowSuccessToast(true);
+    setView('inventario');
     setTimeout(() => {
       setShowSuccessToast(false);
-      setView('inventario');
     }, 2000);
   };
 
@@ -146,7 +156,6 @@ export const LoteView: React.FC<LoteViewProps> = ({
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
         <Card className="lg:col-span-5 p-4 space-y-5">
-          {/* UNIDADE ESCOLAR (apenas MESTRE) */}
           {isMestre && (
             <div className="space-y-3 pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
@@ -155,49 +164,27 @@ export const LoteView: React.FC<LoteViewProps> = ({
               </div>
               <div className="relative">
                 <School className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 z-10" />
-                <input
-                  type="text"
-                  readOnly
-                  value={selectedSchoolName}
+                <input type="text" readOnly value={selectedSchoolName}
                   onFocus={() => setShowSchoolDropdown(true)}
                   placeholder="Selecione uma escola..."
-                  className="w-full text-sm rounded border border-slate-200 bg-slate-50 pl-10 pr-10 py-2 outline-none focus:bg-white focus:ring-1 focus:ring-brand-blue transition-all font-semibold cursor-pointer"
-                />
+                  className="w-full text-sm rounded border border-slate-200 bg-slate-50 pl-10 pr-10 py-2 outline-none focus:bg-white focus:ring-1 focus:ring-brand-blue transition-all font-semibold cursor-pointer" />
                 <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-
                 {showSchoolDropdown && (
                   <div className="absolute z-[100] mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden">
                     <div className="p-2 border-b border-slate-100">
                       <div className="relative">
                         <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="text"
-                          value={schoolSearch}
-                          onChange={(e) => setSchoolSearch(e.target.value)}
-                          placeholder="Buscar escola..."
-                          className="w-full text-xs rounded border border-slate-200 bg-slate-50 pl-8 pr-2 py-1.5 outline-none focus:ring-1 focus:ring-brand-blue font-medium"
-                          autoFocus
-                        />
+                        <input type="text" value={schoolSearch} onChange={(e) => setSchoolSearch(e.target.value)}
+                          placeholder="Buscar escola..." className="w-full text-xs rounded border border-slate-200 bg-slate-50 pl-8 pr-2 py-1.5 outline-none focus:ring-1 focus:ring-brand-blue font-medium" autoFocus />
                       </div>
                     </div>
                     <div className="max-h-48 overflow-y-auto">
-                      {filteredSchools.length > 0 ? (
-                        filteredSchools.map((school) => (
-                          <button
-                            key={school.instituicaoId}
-                            onClick={() => {
-                              setInstituicaoId(school.instituicaoId);
-                              setSchoolSearch('');
-                              setShowSchoolDropdown(false);
-                            }}
-                            className={`w-full text-left px-4 py-2.5 hover:bg-slate-50 border-b border-slate-100 last:border-b-0 transition-colors cursor-pointer ${
-                              instituicaoId === school.instituicaoId ? 'bg-brand-ice' : ''
-                            }`}
-                          >
-                            <p className="text-sm font-semibold text-slate-800">{school.nomeInstituicao}</p>
-                          </button>
-                        ))
-                      ) : (
+                      {filteredSchools.length > 0 ? filteredSchools.map((school: any) => (
+                        <button key={school.id} onClick={() => { setInstituicaoId(school.id); setSchoolSearch(''); setShowSchoolDropdown(false); }}
+                          className={`w-full text-left px-4 py-2.5 hover:bg-slate-50 border-b border-slate-100 last:border-b-0 transition-colors cursor-pointer ${instituicaoId === school.id ? 'bg-brand-ice' : ''}`}>
+                          <p className="text-sm font-semibold text-slate-800">{school.nome}</p>
+                        </button>
+                      )) : (
                         <div className="px-4 py-4 text-center text-sm text-slate-400">Nenhuma escola encontrada</div>
                       )}
                     </div>
@@ -239,14 +226,12 @@ export const LoteView: React.FC<LoteViewProps> = ({
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Ficha Técnica do Lote</p>
 
             <div className="space-y-3">
-              {/* Nome do Item */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nome do Item</label>
                 <input type="text" value={assetName} onChange={(e) => setAssetName(e.target.value)}
                   className="w-full text-sm rounded border border-slate-200 bg-slate-50 p-2 outline-none focus:bg-white focus:ring-1 focus:ring-brand-blue transition-all font-semibold text-slate-700" />
               </div>
 
-              {/* Marca / Modelo lado a lado */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Marca</label>

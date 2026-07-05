@@ -1,80 +1,68 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const instituicaoId = searchParams.get('instituicaoId');
-    const page = parseInt(searchParams.get('page') || '1', 10);
-    const limit = parseInt(searchParams.get('limit') || '10', 10);
+    const status = searchParams.get('status');
+    const id = searchParams.get('id');
+    const pageRaw = searchParams.get('page');
+    const limitRaw = searchParams.get('limit');
+
+    // Single occurrence fetch
+    if (id) {
+      const occ = await prisma.ocorrencia.findUnique({
+        where: { id },
+        include: {
+          instituicao: { select: { id: true, nome: true } },
+          setor: { select: { id: true, nome: true } },
+          item: { select: { id: true, nome: true, numeroPatrimonio: true, categoria: true } },
+          criadoPor: { select: { id: true, nome: true, email: true } },
+          triagemPor: { select: { id: true, nome: true } },
+          aprovadoPor: { select: { id: true, nome: true } },
+          anexos: true,
+          historico: { orderBy: { createdAt: 'desc' } },
+        },
+      });
+      if (!occ) {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 });
+      }
+      return NextResponse.json(formatOccurrence(occ));
+    }
+
+    // List with filters
+    const where: any = {};
+    if (instituicaoId) where.instituicaoId = instituicaoId;
+    if (status) where.status = status;
+
+    const page = pageRaw ? Math.max(1, parseInt(pageRaw)) : 1;
+    const limit = limitRaw ? Math.max(1, Math.min(100, parseInt(limitRaw))) : 50;
     const skip = (page - 1) * limit;
 
-    const where = instituicaoId ? { instituicaoId } : {};
-
-    // Get total count for pagination
-    const totalCount = await prisma.ocorrencia.count({ where });
-
-    const ocorrencias = await prisma.ocorrencia.findMany({
-      where,
-      include: {
-        instituicao: true,
-        setor: true,
-        item: true,
-        criadoPor: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      skip,
-      take: limit,
-    });
-
-    // Format to match the Occurrence interface expected by the frontend
-    const formattedOccurrences = ocorrencias.map(occ => ({
-      id: occ.id,
-      numero: occ.numero,
-      titulo: occ.titulo,
-      descricao: occ.descricao,
-      tipoSolicitacao: occ.tipoSolicitacao,
-      status: occ.status,
-      prioridade: occ.prioridade,
-      localizacaoDescricao: occ.localizacaoDescricao,
-      numeroPatrimonioTexto: occ.numeroPatrimonioTexto,
-      observacoesTriagem: occ.observacoesTriagem,
-      observacoesMestre: occ.observacoesMestre,
-      motivoRecusa: occ.motivoRecusa,
-      prestadorServico: occ.prestadorServico,
-      valorOrcamento: occ.valorOrcamento ? Number(occ.valorOrcamento) : null,
-      dataVisitaAgendada: occ.dataVisitaAgendada,
-      dataConclusao: occ.dataConclusao,
-      dataTriagem: occ.dataTriagem,
-      dataAprovacao: occ.dataAprovacao,
-      createdAt: occ.createdAt,
-      updatedAt: occ.updatedAt,
-      instituicaoId: occ.instituicaoId,
-      setorId: occ.setorId,
-      itemId: occ.itemId,
-      criadoPorId: occ.criadoPorId,
-      triagemPorId: occ.triagemPorId,
-      aprovadoPorId: occ.aprovadoPorId,
-      
-      // Extended properties for UI matching the mock data structure
-      nomeInstituicao: occ.instituicao.nome,
-      nomeSetor: occ.setor?.nome,
-      nomeItem: occ.item?.nome,
-      numeroPatrimonioItem: occ.item?.numeroPatrimonio,
-      categoriaItem: occ.item?.categoria,
-      nomeCriador: occ.criadoPor.nome,
-    }));
+    const [ocorrencias, total] = await Promise.all([
+      prisma.ocorrencia.findMany({
+        where,
+        include: {
+          instituicao: { select: { id: true, nome: true } },
+          setor: { select: { id: true, nome: true } },
+          item: { select: { id: true, nome: true, numeroPatrimonio: true, categoria: true } },
+          criadoPor: { select: { id: true, nome: true } },
+          anexos: { select: { id: true, url: true, tipo: true, nomeArquivo: true, createdAt: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.ocorrencia.count({ where }),
+    ]);
 
     return NextResponse.json({
-      data: formattedOccurrences,
-      pagination: {
-        page,
-        limit,
-        totalCount,
-        totalPages: Math.ceil(totalCount / limit),
-      },
+      data: ocorrencias.map(formatOccurrence),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
     console.error('Error fetching ocorrencias:', error);
@@ -83,4 +71,195 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const {
+      titulo, descricao, tipoSolicitacao, localizacaoDescricao,
+      numeroPatrimonioTexto, itemId, instituicaoId, criadoPorId,
+      prioridade, setorId,
+    } = body;
+
+    if (!titulo || !descricao || !tipoSolicitacao || !instituicaoId || !criadoPorId) {
+      return NextResponse.json(
+        { error: 'Missing required fields: titulo, descricao, tipoSolicitacao, instituicaoId, criadoPorId' },
+        { status: 400 }
+      );
+    }
+
+    const ocorrencia = await prisma.ocorrencia.create({
+      data: {
+        titulo,
+        descricao,
+        tipoSolicitacao,
+        localizacaoDescricao: localizacaoDescricao || null,
+        numeroPatrimonioTexto: numeroPatrimonioTexto || null,
+        itemId: itemId || null,
+        setorId: setorId || null,
+        instituicaoId,
+        criadoPorId,
+        prioridade: prioridade || null,
+        status: 'ABERTA',
+      },
+      include: {
+        instituicao: { select: { id: true, nome: true } },
+        criadoPor: { select: { id: true, nome: true } },
+      },
+    });
+
+    // Create history entry
+    await prisma.historicoOcorrencia.create({
+      data: {
+        statusNovo: 'ABERTA',
+        comentario: 'Ocorrência criada',
+        ocorrenciaId: ocorrencia.id,
+        autorId: criadoPorId,
+      },
+    });
+
+    return NextResponse.json(formatOccurrence(ocorrencia), { status: 201 });
+  } catch (error) {
+    console.error('Error creating ocorrencia:', error);
+    return NextResponse.json(
+      { error: 'Failed to create occurrence' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { id, ...updateData } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+    }
+
+    // Fields that can be updated
+    const allowedFields = [
+      'titulo', 'descricao', 'tipoSolicitacao', 'status', 'prioridade',
+      'localizacaoDescricao', 'numeroPatrimonioTexto',
+      'observacoesTriagem', 'observacoesMestre', 'motivoRecusa',
+      'prestadorServico', 'valorOrcamento',
+      'dataVisitaAgendada', 'dataConclusao', 'dataTriagem', 'dataAprovacao',
+      'setorId', 'itemId', 'triagemPorId', 'aprovadoPorId',
+    ];
+
+    const data: any = {};
+    for (const field of allowedFields) {
+      if (updateData[field] !== undefined) {
+        data[field] = updateData[field];
+      }
+    }
+
+    // Track status change for history
+    const existing = await prisma.ocorrencia.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+
+    const statusChanged = data.status && data.status !== existing.status;
+
+    const updated = await prisma.ocorrencia.update({
+      where: { id },
+      data,
+      include: {
+        instituicao: { select: { id: true, nome: true } },
+        setor: { select: { id: true, nome: true } },
+        item: { select: { id: true, nome: true, numeroPatrimonio: true } },
+        criadoPor: { select: { id: true, nome: true } },
+      },
+    });
+
+    // Create history entry for status change
+    if (statusChanged) {
+      await prisma.historicoOcorrencia.create({
+        data: {
+          statusAnterior: existing.status,
+          statusNovo: data.status,
+          comentario: updateData.observacoesMestre || updateData.observacoesTriagem || null,
+          ocorrenciaId: id,
+          autorId: updateData.triagemPorId || updateData.aprovadoPorId || existing.criadoPorId,
+        },
+      });
+    }
+
+    return NextResponse.json(formatOccurrence(updated));
+  } catch (error) {
+    console.error('Error updating ocorrencia:', error);
+    return NextResponse.json(
+      { error: 'Failed to update occurrence' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { id } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+    }
+
+    // Delete related records first
+    await prisma.anexo.deleteMany({ where: { ocorrenciaId: id } });
+    await prisma.historicoOcorrencia.deleteMany({ where: { ocorrenciaId: id } });
+    await prisma.notificacao.deleteMany({ where: { ocorrenciaId: id } });
+    await prisma.ocorrencia.delete({ where: { id } });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting ocorrencia:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete occurrence' },
+      { status: 500 }
+    );
+  }
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatOccurrence(occ: any) {
+  return {
+    id: occ.id,
+    numero: occ.numero,
+    titulo: occ.titulo,
+    descricao: occ.descricao,
+    tipoSolicitacao: occ.tipoSolicitacao,
+    status: occ.status,
+    prioridade: occ.prioridade,
+    localizacaoDescricao: occ.localizacaoDescricao,
+    numeroPatrimonioTexto: occ.numeroPatrimonioTexto,
+    observacoesTriagem: occ.observacoesTriagem,
+    observacoesMestre: occ.observacoesMestre,
+    motivoRecusa: occ.motivoRecusa,
+    prestadorServico: occ.prestadorServico,
+    valorOrcamento: occ.valorOrcamento ? Number(occ.valorOrcamento) : null,
+    dataVisitaAgendada: occ.dataVisitaAgendada,
+    dataConclusao: occ.dataConclusao,
+    dataTriagem: occ.dataTriagem,
+    dataAprovacao: occ.dataAprovacao,
+    createdAt: occ.createdAt,
+    updatedAt: occ.updatedAt,
+    instituicaoId: occ.instituicaoId,
+    setorId: occ.setorId,
+    itemId: occ.itemId,
+    criadoPorId: occ.criadoPorId,
+    triagemPorId: occ.triagemPorId,
+    aprovadoPorId: occ.aprovadoPorId,
+    anexos: occ.anexos || [],
+    historico: occ.historico || [],
+    // Extended
+    nomeInstituicao: occ.instituicao?.nome,
+    nomeSetor: occ.setor?.nome,
+    nomeItem: occ.item?.nome,
+    numeroPatrimonioItem: occ.item?.numeroPatrimonio,
+    categoriaItem: occ.item?.categoria,
+    nomeCriador: occ.criadoPor?.nome,
+  };
 }

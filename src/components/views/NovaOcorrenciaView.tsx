@@ -27,6 +27,8 @@ interface NovaOcorrenciaViewProps {
   onRegisterOccurrence: (occurrence: Occurrence) => void;
   editingOccurrence?: Occurrence | null;
   canEditPriority?: boolean;
+  instituicaoId?: string;
+  criadoPorId?: string;
 }
 
 const SOLICITACAO_TYPES: { id: TipoSolicitacao; label: string; description: string; icon: React.FC<React.SVGProps<SVGSVGElement>> }[] = [
@@ -53,7 +55,9 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
   setView,
   onRegisterOccurrence,
   editingOccurrence = null,
-  canEditPriority = false
+  canEditPriority = false,
+  instituicaoId: propInstituicaoId,
+  criadoPorId: propCriadoPorId,
 }) => {
   const isEditing = !!editingOccurrence;
 
@@ -191,7 +195,7 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
       descricao: description.trim(),
       tipoSolicitacao: solicitacaoType,
       status: isEditing && editingOccurrence ? editingOccurrence.status : 'ABERTA',
-      prioridade: isEditing && editingOccurrence ? editingOccurrence.prioridade : (canEditPriority ? priority : null),
+      prioridade: canEditPriority ? priority : (isEditing && editingOccurrence ? editingOccurrence.prioridade : null),
       localizacaoDescricao: localizacao.trim(),
       numeroPatrimonioTexto: selectedAsset?.numeroPatrimonio || null,
       anexos: attachedFiles.map((file, idx) => ({
@@ -216,21 +220,21 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
       dataAprovacao: isEditing && editingOccurrence ? editingOccurrence.dataAprovacao : null,
       createdAt: isEditing && editingOccurrence ? editingOccurrence.createdAt : new Date(),
       updatedAt: new Date(),
-      instituicaoId: isEditing && editingOccurrence ? editingOccurrence.instituicaoId : 'inst_padrao',
+      instituicaoId: isEditing && editingOccurrence ? editingOccurrence.instituicaoId : (propInstituicaoId || ''),
       setorId: isEditing && editingOccurrence ? editingOccurrence.setorId : null,
       itemId: selectedAsset?.id || (isEditing && editingOccurrence ? editingOccurrence.itemId : null),
-      criadoPorId: isEditing && editingOccurrence ? editingOccurrence.criadoPorId : 'user_atual',
+      criadoPorId: isEditing && editingOccurrence ? editingOccurrence.criadoPorId : (propCriadoPorId || 'user_atual'),
       triagemPorId: isEditing && editingOccurrence ? editingOccurrence.triagemPorId : null,
       aprovadoPorId: isEditing && editingOccurrence ? editingOccurrence.aprovadoPorId : null,
     };
     
+    setView('ocorrencias');
     setTimeout(() => {
       onRegisterOccurrence(newOccurrence);
       setIsSubmitting(false);
       setShowSuccess(true);
       setTimeout(() => {
         setShowSuccess(false);
-        setView('ocorrencias');
       }, 2000);
     }, 800);
   };
@@ -374,12 +378,13 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Prioridade</label>
                 <div className="grid grid-cols-3 gap-2">
-                  {(['BAIXA', 'MEDIA', 'ALTA'] as Prioridade[]).map((p) => {
+                  {(['BAIXA', 'MEDIA', 'ALTA', 'URGENTE'] as Prioridade[]).map((p) => {
                     const isActive = priority === p;
                     const colors: Record<string, string> = {
                       BAIXA: isActive ? 'bg-slate-100 border-slate-400 text-slate-800' : 'bg-white border-slate-200 text-slate-500',
                       MEDIA: isActive ? 'bg-amber-100 border-amber-400 text-amber-800 font-extrabold' : 'bg-white border-slate-200 text-slate-500',
                       ALTA: isActive ? 'bg-red-100 border-red-400 text-red-800 font-extrabold' : 'bg-white border-slate-200 text-slate-500',
+                      URGENTE: isActive ? 'bg-purple-100 border-purple-400 text-purple-800 font-extrabold' : 'bg-white border-slate-200 text-slate-500',
                     };
                     return (
                       <button
@@ -388,7 +393,7 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
                         onClick={() => setPriority(p)}
                         className={`border rounded py-2 text-center text-xs font-bold transition-all cursor-pointer ${colors[p]}`}
                       >
-                        {p === 'BAIXA' ? 'Baixa' : p === 'MEDIA' ? 'Média' : 'Alta'}
+                        {p === 'BAIXA' ? 'Baixa' : p === 'MEDIA' ? 'Média' : p === 'ALTA' ? 'Alta' : 'Urgente'}
                       </button>
                     );
                   })}

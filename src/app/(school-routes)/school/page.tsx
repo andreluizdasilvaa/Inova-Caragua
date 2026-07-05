@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Occurrence, Asset } from '@/types';
-import { mockOccurrences, mockAssets, mockSchoolStats } from '@/mockData';
+import { api } from '@/lib/api';
 import { SchoolSidebar } from '@/components/SchoolSidebar';
 import { Header } from '@/components/Header';
 import { SchoolDashboardView } from '@/components/views/SchoolDashboardView';
@@ -19,109 +19,169 @@ function LoadingSpinner() {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center">
       <div className="flex flex-col items-center gap-3">
         <div className="w-8 h-8 border-2 border-brand-blue border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm font-bold text-slate-500">Carregando sessão...</p>
+        <p className="text-sm font-bold text-slate-500">Carregando...</p>
       </div>
     </div>
   );
 }
 
 export default function SchoolPage() {
-  const { data: session, status } = useSession()
+  const { data: session, status } = useSession();
 
-  // Active View Router - must come before early return
   const [currentView, setView] = useState<string>('dashboard');
-
-  // Local state for occurrences (to allow priority editing)
-  const [schoolOccurrencesState, setSchoolOccurrences] = useState<Occurrence[]>([]);
-
-  // Selected detail items
+  const [schoolOccurrences, setSchoolOccurrences] = useState<Occurrence[]>([]);
+  const [schoolAssets, setSchoolAssets] = useState<Asset[]>([]);
   const [selectedOccurrence, setSelectedOccurrence] = useState<Occurrence | null>(null);
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
-
-  // Mobile sidebar visibility
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [schoolName, setSchoolName] = useState('Minha Escola');
 
-  const schoolOccurrences = useMemo(() => {
-    if (schoolOccurrencesState.length > 0) {
-      return schoolOccurrencesState;
-    }
-    return mockOccurrences;
-  }, [schoolOccurrencesState]);
-
-  // All hooks must be called before any conditional return
-  // Get the user's instituicaoId from session
   const instituicaoId = session?.user?.instituicaoId || null;
 
-  // Fetch occurrences by the user's institution
-  React.useEffect(() => {
-    if (instituicaoId) {
-      fetch(`/api/ocorrencias?instituicaoId=${instituicaoId}`)
-        .then(res => res.json())
-        .then(data => {
-          if (Array.isArray(data)) {
-            setSchoolOccurrences(data);
-          }
-        })
-        .catch(err => console.error('Error fetching occurrences:', err));
+  // Fetch data
+  const fetchData = useCallback(async () => {
+    if (!instituicaoId) return;
+
+    setLoading(true);
+    try {
+      const [occResult, itemsResult, instResult] = await Promise.all([
+        api.occurrences.list({ instituicaoId }),
+        api.items.list({ instituicaoId }),
+        api.instituicoes.list(),
+      ]);
+
+      const occurrences = Array.isArray(occResult) ? occResult : occResult.data || [];
+      const items = Array.isArray(itemsResult) ? itemsResult : itemsResult.data || [];
+
+      setSchoolOccurrences(occurrences);
+      setSchoolAssets(items);
+
+      // Find school name
+      const instList = Array.isArray(instResult) ? instResult : [];
+      const school = instList.find((i: any) => i.id === instituicaoId);
+      if (school) setSchoolName(school.nome);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+    } finally {
+      setLoading(false);
     }
   }, [instituicaoId]);
 
-  const [schoolAssets, setSchoolAssets] = React.useState<Asset[]>([]);
-
-  React.useEffect(() => {
-    if (!instituicaoId) return;
-    fetch(`/api/itens?instituicaoId=${instituicaoId}`)
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setSchoolAssets(data);
-        }
-      })
-      .catch(err => console.error('Error fetching school assets:', err));
-  }, [instituicaoId]);
-
-  // Find school info from mock data
-  const schoolInfo = useMemo(() => {
-    if (!instituicaoId) return null;
-    return mockSchoolStats.find(s => s.instituicaoId === instituicaoId) || null;
-  }, [instituicaoId]);
-
-  // Now safe to do early return for loading state
-  if (status === 'loading') {
-    return <LoadingSpinner />;
-  }
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   // Handlers
-  const handleUpdateOccurrence = (updated: Occurrence) => {
-    // For school users we don't need triagem update, but keep the pattern
-  };
+  const handleUpdateOccurrence = useCallback(async (updated: Occurrence) => {
+    try {
+      const result = await api.occurrences.update(updated.id, {
+        status: updated.status,
+        prioridade: updated.prioridade,
+        observacoesMestre: updated.observacoesMestre,
+        observacoesTriagem: updated.observacoesTriagem,
+      });
+      setSchoolOccurrences(prev => prev.map(o => o.id === result.id ? result : o));
+    } catch (err) {
+      console.error('Error updating occurrence:', err);
+    }
+  }, []);
 
-  const handleGenerateBatch = (newAssets: Asset[]) => {
-    // In a real app, these would be saved to the DB
-  };
+  const handleRegisterOccurrence = useCallback(async (occurrence: Occurrence) => {
+    try {
+      const isEditing = occurrence.id && !occurrence.id.startsWith('occ_');
+      
+      if (isEditing) {
+        // Update existing occurrence
+        // If it was waiting for correction, auto-resubmit (set back to ABERTA)
+        const wasAguardandoCorrecao = occurrence.status === 'AGUARDANDO_CORRECAO';
+        const result = await api.occurrences.update(occurrence.id, {
+          titulo: occurrence.titulo,
+          descricao: occurrence.descricao,
+          tipoSolicitacao: occurrence.tipoSolicitacao,
+          localizacaoDescricao: occurrence.localizacaoDescricao,
+          numeroPatrimonioTexto: occurrence.numeroPatrimonioTexto,
+          itemId: occurrence.itemId,
+          prioridade: occurrence.prioridade,
+          ...(wasAguardandoCorrecao ? { status: 'ABERTA', motivoRecusa: null } : {}),
+        });
+        setSchoolOccurrences(prev => prev.map(o => o.id === result.id ? result : o));
+      } else {
+        // Create new occurrence
+        const result = await api.occurrences.create({
+          titulo: occurrence.titulo,
+          descricao: occurrence.descricao,
+          tipoSolicitacao: occurrence.tipoSolicitacao,
+          localizacaoDescricao: occurrence.localizacaoDescricao,
+          numeroPatrimonioTexto: occurrence.numeroPatrimonioTexto,
+          itemId: occurrence.itemId,
+          instituicaoId: occurrence.instituicaoId,
+          criadoPorId: occurrence.criadoPorId,
+          prioridade: occurrence.prioridade,
+        });
+        setSchoolOccurrences(prev => [result, ...prev]);
+      }
+    } catch (err) {
+      console.error('Error saving occurrence:', err);
+    }
+  }, []);
 
-  const handleRegisterOccurrence = (occurrence: Occurrence) => {
-    // In a real app, this would be saved to the DB
-  };
+  const handleRegisterAsset = useCallback(async (asset: Asset) => {
+    try {
+      const result = await api.items.create({
+        nome: asset.nome,
+        categoria: asset.categoria,
+        numeroPatrimonio: asset.numeroPatrimonio,
+        numeroSerie: asset.numeroSerie,
+        marca: asset.marca,
+        modelo: asset.modelo,
+        estadoConservacao: asset.estadoConservacao,
+        status: asset.status,
+        dataAquisicao: asset.dataAquisicao?.toISOString(),
+        valorAquisicao: asset.valorAquisicao,
+        observacoes: asset.observacoes,
+        setorId: asset.setorId,
+        instituicaoId: asset.instituicaoId,
+        cadastradoPorId: asset.cadastradoPorId,
+      });
+      setSchoolAssets(prev => [result, ...prev]);
+    } catch (err) {
+      console.error('Error creating asset:', err);
+    }
+  }, []);
 
-  const handleRegisterAsset = (asset: Asset) => {
-    // In a real app, this would be saved to the DB
-  };
+  const handleGenerateBatch = useCallback(async (newAssets: Asset[]) => {
+    for (const asset of newAssets) {
+      await handleRegisterAsset(asset);
+    }
+  }, [handleRegisterAsset]);
 
   const handleLogout = () => {
     signOut({ callbackUrl: '/' });
   };
 
-  const handleSetView = (view: string) => {
-    // School users must NOT access triagem
-    if (view === 'triagem') return;
+  const handleSetView = useCallback((view: string) => {
+    if (view === 'triagem' || view === 'aprovacao') return;
     setView(view);
-  };
+  }, []);
+
+  if (status === 'loading') {
+    return <LoadingSpinner />;
+  }
+
+  if (!instituicaoId) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg font-bold text-slate-700">Usuário sem vínculo com instituição</p>
+          <p className="text-sm text-slate-500 mt-2">Contate o administrador do sistema.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
-
-      {/* Sidebar - Fixed size with responsive toggling */}
       <div className={`md:block ${sidebarOpen ? 'block' : 'hidden'}`}>
         <SchoolSidebar
           currentView={currentView}
@@ -134,87 +194,88 @@ export default function SchoolPage() {
         />
       </div>
 
-      {/* Main layout container offsetting the fixed sidebar (left-60) */}
       <div className="md:pl-60 min-h-screen flex flex-col">
-
-        {/* Top Navbar */}
         <Header
           session={session}
           onMenuClick={() => setSidebarOpen(!sidebarOpen)}
         />
 
-        {/* Scrollable screen body */}
         <main className="flex-1 p-4 mt-12 overflow-y-auto">
           <div className="max-w-7xl mx-auto">
-            {currentView === 'dashboard' && (
-              <SchoolDashboardView
-                occurrences={schoolOccurrences}
-                assets={schoolAssets}
-                schoolName={schoolInfo?.nomeInstituicao || 'Minha Escola'}
-              />
-            )}
+            {loading ? (
+              <LoadingSpinner />
+            ) : (
+              <>
+                {currentView === 'dashboard' && (
+                  <SchoolDashboardView
+                    occurrences={schoolOccurrences}
+                    assets={schoolAssets}
+                    schoolName={schoolName}
+                  />
+                )}
 
-            {currentView === 'ocorrencias' && (
-              <OcorrenciasView
-                occurrences={schoolOccurrencesState.length > 0 ? schoolOccurrencesState : schoolOccurrences}
-                setView={handleSetView}
-                setSelectedOccurrence={setSelectedOccurrence}
-                onUpdateOccurrence={(updated) => {
-                  setSchoolOccurrences((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
-                }}
-                canEditOwn={true}
-              />
-            )}
+                {currentView === 'ocorrencias' && (
+                  <OcorrenciasView
+                    occurrences={schoolOccurrences}
+                    setView={handleSetView}
+                    setSelectedOccurrence={setSelectedOccurrence}
+                    onUpdateOccurrence={handleUpdateOccurrence}
+                    canEditOwn={true}
+                  />
+                )}
 
-            {currentView === 'inventario' && (
-              <InventarioView
-                assets={schoolAssets}
-                setView={handleSetView}
-                setSelectedAsset={setSelectedAsset}
-              />
-            )}
+                {currentView === 'inventario' && (
+                  <InventarioView
+                    assets={schoolAssets}
+                    setView={handleSetView}
+                    setSelectedAsset={setSelectedAsset}
+                  />
+                )}
 
-            {currentView === 'lote' && (
-              <LoteView
-                assets={schoolAssets}
-                setView={handleSetView}
-                onGenerateBatch={handleGenerateBatch}
-                instituicaoId={instituicaoId || undefined}
-                userRole="ESCOLA"
-                instituicaoNome={schoolInfo?.nomeInstituicao}
-              />
-            )}
+                {currentView === 'lote' && (
+                  <LoteView
+                    assets={schoolAssets}
+                    setView={handleSetView}
+                    onGenerateBatch={handleGenerateBatch}
+                    instituicaoId={instituicaoId}
+                    userRole="ESCOLA"
+                    instituicaoNome={schoolName}
+                  />
+                )}
 
-            {currentView === 'detalhes' && (
-              <DetalhesView
-                asset={selectedAsset}
-                setView={handleSetView}
-              />
-            )}
+                {currentView === 'detalhes' && (
+                  <DetalhesView
+                    asset={selectedAsset}
+                    setView={handleSetView}
+                  />
+                )}
 
-            {currentView === 'nova-ocorrencia' && (
-              <NovaOcorrenciaView
-                assets={schoolAssets}
-                occurrences={schoolOccurrences}
-                setView={handleSetView}
-                onRegisterOccurrence={handleRegisterOccurrence}
-                editingOccurrence={selectedOccurrence}
-              />
-            )}
+                {currentView === 'nova-ocorrencia' && (
+                  <NovaOcorrenciaView
+                    assets={schoolAssets}
+                    occurrences={schoolOccurrences}
+                    setView={handleSetView}
+                    onRegisterOccurrence={handleRegisterOccurrence}
+                    editingOccurrence={selectedOccurrence}
+                    instituicaoId={instituicaoId}
+                    criadoPorId={session?.user?.id}
+                  />
+                )}
 
-            {currentView === 'novo-ativo' && (
-              <NovoAtivoView
-                setView={handleSetView}
-                onRegisterAsset={handleRegisterAsset}
-                userRole="ESCOLA"
-                instituicaoId={instituicaoId || undefined}
-                instituicaoNome={schoolInfo?.nomeInstituicao}
-                editingAsset={selectedAsset}
-              />
+                {currentView === 'novo-ativo' && (
+                  <NovoAtivoView
+                    setView={handleSetView}
+                    onRegisterAsset={handleRegisterAsset}
+                    userRole="ESCOLA"
+                    instituicaoId={instituicaoId}
+                    instituicaoNome={schoolName}
+                    editingAsset={selectedAsset}
+                  />
+                )}
+              </>
             )}
           </div>
         </main>
-
       </div>
     </div>
   );

@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useMemo } from 'react';
-import { Asset, CategoriaItem, EstadoConservacao, StatusItem } from '@/types';
-import { OccurrenceHistory } from '@/types';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Asset, CategoriaItem, EstadoConservacao, StatusItem, OccurrenceHistory } from '@/types';
 import { Card, Button, AssetStatusBadge, STATUS_ITEM_LABEL } from '@/components/UI';
+import { formatDate } from '@/lib/utils/timestamp';
+import { api } from '@/lib/api';
 import { 
   ArrowLeft, 
   FileText, 
@@ -17,7 +18,6 @@ import {
   Hash,
   Tag
 } from 'lucide-react';
-import { mockAssetHistory } from '@/mockData';
 
 interface DetalhesViewProps {
   asset: Asset | null;
@@ -45,7 +45,8 @@ export const DetalhesView: React.FC<DetalhesViewProps> = ({
   asset,
   setView
 }) => {
-  const [toastMessage, setToastMessage] = React.useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [historyList, setHistoryList] = useState<OccurrenceHistory[]>([]);
 
   // Safe fallback if null
   const currentAsset: Asset = asset || {
@@ -61,25 +62,20 @@ export const DetalhesView: React.FC<DetalhesViewProps> = ({
     instituicaoId: 'N/A'
   };
 
+  // Fetch history from API
+  useEffect(() => {
+    if (!currentAsset.id || currentAsset.id === 'N/A') return;
+    api.history.list(currentAsset.id)
+      .then(data => setHistoryList(data || []))
+      .catch(err => console.error('Error fetching history:', err));
+  }, [currentAsset.id]);
+
   const triggerToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => {
       setToastMessage(null);
     }, 2500);
   };
-
-  const formatDate = (date: Date | string | null | undefined) => {
-    if (!date) return '—';
-    const d = new Date(date);
-    if (isNaN(d.getTime())) return '—';
-    return d.toLocaleDateString('pt-BR');
-  };
-
-  // Get asset history list
-  const historyList = useMemo<OccurrenceHistory[]>(() => {
-    const key = currentAsset.id.replace('#', '').trim();
-    return mockAssetHistory[key] || [];
-  }, [currentAsset]);
 
   return (
     <div className="space-y-4">
@@ -160,7 +156,7 @@ export const DetalhesView: React.FC<DetalhesViewProps> = ({
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Data de Aquisição</span>
               <span className="text-sm font-bold text-slate-800 flex items-center gap-1">
                 <Calendar className="w-4 h-4 text-slate-400" />
-                {formatDate(currentAsset.dataAquisicao)}
+                {formatDate(currentAsset.dataAquisicao || new Date())}
               </span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-slate-100">

@@ -272,3 +272,54 @@ Conta triagem:
 Email: triagem@triagem.com
 
 Senha: triagem
+
+---
+
+# Fluxo de Uso do Sistema
+
+Este guia descreve o passo a passo para testar o fluxo completo do sistema, desde o cadastro de um item pela escola até o acompanhamento do chamado.
+1. Login como Escola
+Entre no sistema utilizando o login de usuário Escola fornecido.
+2. Cadastrar um Item
+Acesse a página Inventário e cadastre um novo item:
+
+Clique em "Novo Item".
+Preencha as informações solicitadas.
+
+Observação: A "chave de patrimônio" é um ID único, presente fisicamente em alguns itens de órgãos públicos.
+
+
+Clique em "Cadastrar".
+
+3. Registrar uma Ocorrência
+
+Acesse a página Ocorrências.
+Clique em "Nova Ocorrência".
+Preencha os dados solicitados.
+
+4. Login como Triagem ou Admin
+Saia da conta atual e entre com o usuário Triagem ou Admin.
+
+Observação: o Admin possui o mesmo nível de acesso que a Triagem, porém a Triagem não possui o mesmo nível de acesso do Admin.
+
+Na página Triagem / Monitoramento:
+
+Em "Ações da Triagem", selecione o chamado cadastrado anteriormente pela escola.
+Analise as informações do chamado.
+Selecione o nível de prioridade e preencha informações adicionais, se necessário.
+Clique em "Enviar para Aprovação".
+
+5. Login como Admin
+Entre com o usuário Admin do sistema:
+
+Clique em "Aprovação" — o chamado processado pela triagem estará listado ali.
+Clique no chamado e, em seguida, em "Agenda".
+Adicione uma observação, se necessário.
+
+Observação: em um ambiente real, esta etapa seria realizada pelo secretário da SEDUC, que entraria em contato com a empresa terceirizada responsável pelo serviço para obter as informações necessárias.
+
+
+Ao acessar Ocorrências, é possível visualizar a mudança de status do chamado em tempo real.
+
+6. Verificação Final
+Saia da conta e entre novamente como Escola para visualizar o andamento e status atualizado do chamado.

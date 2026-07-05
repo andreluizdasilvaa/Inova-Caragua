@@ -12,13 +12,33 @@ import { DetalhesView } from '@/components/views/DetalhesView';
 import { NovaOcorrenciaView } from '@/components/views/NovaOcorrenciaView';
 import { signOut, useSession } from 'next-auth/react';
 
-export default function SchoolPage() {
-  const { data: session } = useSession()
+function LoadingSpinner() {
+  return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 border-2 border-brand-blue border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm font-bold text-slate-500">Carregando sessão...</p>
+      </div>
+    </div>
+  );
+}
 
+export default function SchoolPage() {
+  const { data: session, status } = useSession()
+
+  // Active View Router - must come before early return
+  const [currentView, setView] = useState<string>('dashboard');
+
+  // Selected detail items
+  const [selectedOccurrence, setSelectedOccurrence] = useState<Occurrence | null>(null);
+  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+
+  // Mobile sidebar visibility
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // All hooks must be called before any conditional return
   // Get the user's instituicaoId from session
   const instituicaoId = session?.user?.instituicaoId || null;
-
-  console.log("user", session?.user)
 
   // Filter occurrences and assets by the user's institution only
   const schoolOccurrences = useMemo<Occurrence[]>(() => {
@@ -33,22 +53,14 @@ export default function SchoolPage() {
 
   // Find school info from mock data
   const schoolInfo = useMemo(() => {
-
-    console.log(instituicaoId)
-
     if (!instituicaoId) return null;
     return mockSchoolStats.find(s => s.instituicaoId === instituicaoId) || null;
   }, [instituicaoId]);
 
-  // Active View Router
-  const [currentView, setView] = useState<string>('dashboard');
-
-  // Selected detail items
-  const [selectedOccurrence, setSelectedOccurrence] = useState<Occurrence | null>(null);
-  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(schoolAssets[0] || null);
-
-  // Mobile sidebar visibility
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Now safe to do early return for loading state
+  if (status === 'loading') {
+    return <LoadingSpinner />;
+  }
 
   // Handlers
   const handleUpdateOccurrence = (updated: Occurrence) => {
@@ -67,6 +79,12 @@ export default function SchoolPage() {
     signOut({ callbackUrl: '/' });
   };
 
+  const handleSetView = (view: string) => {
+    // School users must NOT access triagem
+    if (view === 'triagem') return;
+    setView(view);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
       
@@ -75,7 +93,7 @@ export default function SchoolPage() {
         <SchoolSidebar
           currentView={currentView}
           setView={(view) => {
-            setView(view);
+            handleSetView(view);
             setSidebarOpen(false);
           }}
           session={session}
@@ -106,14 +124,7 @@ export default function SchoolPage() {
             {currentView === 'ocorrencias' && (
               <OcorrenciasView
                 occurrences={schoolOccurrences}
-                setView={(view) => {
-                  // School users MUST NOT access triagem; redirect to detail if clicked
-                  if (view === 'triagem') {
-                    // Stay on ocorrencias view - school users cannot access triagem
-                    return;
-                  }
-                  setView(view);
-                }}
+                setView={handleSetView}
                 setSelectedOccurrence={setSelectedOccurrence}
               />
             )}
@@ -121,7 +132,7 @@ export default function SchoolPage() {
             {currentView === 'inventario' && (
               <InventarioView
                 assets={schoolAssets}
-                setView={setView}
+                setView={handleSetView}
                 setSelectedAsset={setSelectedAsset}
               />
             )}
@@ -129,7 +140,7 @@ export default function SchoolPage() {
             {currentView === 'lote' && (
               <LoteView
                 assets={schoolAssets}
-                setView={setView}
+                setView={handleSetView}
                 onGenerateBatch={handleGenerateBatch}
                 instituicaoId={instituicaoId || undefined}
               />
@@ -138,7 +149,7 @@ export default function SchoolPage() {
             {currentView === 'detalhes' && (
               <DetalhesView
                 asset={selectedAsset}
-                setView={setView}
+                setView={handleSetView}
               />
             )}
 
@@ -146,7 +157,7 @@ export default function SchoolPage() {
               <NovaOcorrenciaView
                 assets={schoolAssets}
                 occurrences={schoolOccurrences}
-                setView={setView}
+                setView={handleSetView}
                 onRegisterOccurrence={handleRegisterOccurrence}
               />
             )}

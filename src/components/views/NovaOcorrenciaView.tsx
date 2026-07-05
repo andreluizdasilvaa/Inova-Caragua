@@ -374,12 +374,13 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Prioridade</label>
                 <div className="grid grid-cols-3 gap-2">
-                  {(['BAIXA', 'MEDIA', 'ALTA'] as Prioridade[]).map((p) => {
+                  {(['BAIXA', 'MEDIA', 'ALTA', 'URGENTE'] as Prioridade[]).map((p) => {
                     const isActive = priority === p;
                     const colors: Record<string, string> = {
                       BAIXA: isActive ? 'bg-slate-100 border-slate-400 text-slate-800' : 'bg-white border-slate-200 text-slate-500',
                       MEDIA: isActive ? 'bg-amber-100 border-amber-400 text-amber-800 font-extrabold' : 'bg-white border-slate-200 text-slate-500',
                       ALTA: isActive ? 'bg-red-100 border-red-400 text-red-800 font-extrabold' : 'bg-white border-slate-200 text-slate-500',
+                      URGENTE: isActive ? 'bg-purple-100 border-purple-400 text-purple-800 font-extrabold' : 'bg-white border-slate-200 text-slate-500',
                     };
                     return (
                       <button
@@ -388,7 +389,7 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
                         onClick={() => setPriority(p)}
                         className={`border rounded py-2 text-center text-xs font-bold transition-all cursor-pointer ${colors[p]}`}
                       >
-                        {p === 'BAIXA' ? 'Baixa' : p === 'MEDIA' ? 'Média' : 'Alta'}
+                        {p === 'BAIXA' ? 'Baixa' : p === 'MEDIA' ? 'Média' : p === 'ALTA' ? 'Alta' : 'Urgente'}
                       </button>
                     );
                   })}

@@ -27,7 +27,7 @@ export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
   const [selectedStatus, setSelectedStatus] = useState<string>('Todas');
   const [selectedTipo, setSelectedTipo] = useState<string>('Todas');
 
-  const prioridades: Prioridade[] = ['BAIXA', 'MEDIA', 'ALTA'];
+  const prioridades: Prioridade[] = ['BAIXA', 'MEDIA', 'ALTA', 'URGENTE'];
   const statusList: StatusOcorrencia[] = ['ABERTA', 'AGUARDANDO_CORRECAO', 'AGUARDANDO_APROVACAO', 'APROVADA', 'AGENDADA', 'EM_EXECUCAO', 'CONCLUIDA', 'RECUSADA', 'CANCELADA'];
   const tiposList: TipoSolicitacao[] = ['SERVICO', 'REPARO', 'TROCA', 'REABASTECIMENTO', 'OUTRO'];
 
@@ -35,6 +35,7 @@ export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
     BAIXA: 'Baixa',
     MEDIA: 'Média',
     ALTA: 'Alta',
+    URGENTE: 'Urgente',
   };
 
   const STATUS_LABEL: Record<StatusOcorrencia, string> = {
@@ -159,7 +160,7 @@ export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
             >
               <option value="Todas">Todas as Prioridades</option>
               {prioridades.map(p => (
-                <option key={p} value={p}>{PRIORIDADE_LABEL[p]}</option>
+                <option key={p} value={p}>{PRIORIDADE_LABEL[p] || p}</option>
               ))}
             </select>
           </div>

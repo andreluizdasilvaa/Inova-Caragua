@@ -19,7 +19,10 @@ import {
   Image as ImageIcon,
   ChevronLeft,
   ChevronRight,
-  X
+  X,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { mockAssetHistory, mockSchoolStats } from '@/mockData';
 
@@ -52,6 +55,12 @@ export const TriagemView: React.FC<TriagemViewProps> = ({
   const [triageFeedback, setTriageFeedback] = useState('');
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  
+  // Sort filters
+  const [sortByRecent, setSortByRecent] = useState(false);
+  const [sortByOldest, setSortByOldest] = useState(false);
+  const [sortByUrgent, setSortByUrgent] = useState(false);
+  const [sortByHigh, setSortByHigh] = useState(false);
 
   // Sync state when selected occurrence changes
   React.useEffect(() => {
@@ -60,6 +69,48 @@ export const TriagemView: React.FC<TriagemViewProps> = ({
       setTriageFeedback('');
     }
   }, [currentOcc]);
+
+  // Sort occurrences based on selected filters
+  const sortedOccurrences = useMemo(() => {
+    const pending = occurrences.filter(o => 
+      o.status === 'ABERTA' || o.status === 'AGUARDANDO_APROVACAO' || o.status === 'AGUARDANDO_CORRECAO'
+    );
+
+    const priorityOrder: Record<string, number> = {
+      'URGENTE': 4,
+      'ALTA': 3,
+      'MEDIA': 2,
+      'BAIXA': 1,
+    };
+
+    return [...pending].sort((a, b) => {
+      // Urgent priority filter (only URGENTE)
+      if (sortByUrgent) {
+        const aIsUrgent = a.prioridade === 'URGENTE';
+        const bIsUrgent = b.prioridade === 'URGENTE';
+        if (bIsUrgent && !aIsUrgent) return -1;
+        if (!bIsUrgent && aIsUrgent) return 1;
+      }
+
+      // High priority filter (ALTA and URGENTE)
+      if (sortByHigh) {
+        const aIsHigh = a.prioridade === 'ALTA' || a.prioridade === 'URGENTE';
+        const bIsHigh = b.prioridade === 'ALTA' || b.prioridade === 'URGENTE';
+        if (bIsHigh && !aIsHigh) return -1;
+        if (!bIsHigh && aIsHigh) return 1;
+      }
+
+      // Date sort
+      if (sortByRecent || sortByOldest) {
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
+        const dateDiff = sortByRecent ? dateB - dateA : dateA - dateB;
+        if (dateDiff !== 0) return dateDiff;
+      }
+
+      return 0;
+    });
+  }, [occurrences, sortByRecent, sortByOldest, sortByUrgent, sortByHigh]);
 
   // Fetch school stats dynamically
   const schoolStats = useMemo<SchoolStats>(() => {
@@ -142,11 +193,70 @@ export const TriagemView: React.FC<TriagemViewProps> = ({
             </span>
           </div>
 
+          {/* Sort Filters */}
+          <div className="px-4 py-2 border-b border-slate-200 bg-slate-50 flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Ordenar por:</span>
+            <button
+              onClick={() => {
+                setSortByRecent(!sortByRecent);
+                if (!sortByRecent) setSortByOldest(false);
+              }}
+              className={`px-2.5 py-1.5 text-xs font-bold rounded border transition-all cursor-pointer flex items-center gap-1 ${
+                sortByRecent
+                  ? 'bg-brand-blue text-white border-brand-blue'
+                  : 'bg-white text-slate-600 border-slate-200 hover:border-brand-blue hover:text-brand-blue'
+              }`}
+            >
+              <ArrowDown className="w-3.5 h-3.5" />
+              Mais Recentes
+            </button>
+            <button
+              onClick={() => {
+                setSortByOldest(!sortByOldest);
+                if (!sortByOldest) setSortByRecent(false);
+              }}
+              className={`px-2.5 py-1.5 text-xs font-bold rounded border transition-all cursor-pointer flex items-center gap-1 ${
+                sortByOldest
+                  ? 'bg-brand-blue text-white border-brand-blue'
+                  : 'bg-white text-slate-600 border-slate-200 hover:border-brand-blue hover:text-brand-blue'
+              }`}
+            >
+              <ArrowUp className="w-3.5 h-3.5" />
+              Mais Antigos
+            </button>
+            <button
+              onClick={() => {
+                setSortByUrgent(!sortByUrgent);
+                if (!sortByUrgent) setSortByHigh(false);
+              }}
+              className={`px-2.5 py-1.5 text-xs font-bold rounded border transition-all cursor-pointer flex items-center gap-1 ${
+                sortByUrgent
+                  ? 'bg-red-600 text-white border-red-600'
+                  : 'bg-white text-slate-600 border-slate-200 hover:border-red-600 hover:text-red-600'
+              }`}
+            >
+              <AlertTriangle className="w-3.5 h-3.5" />
+              Urgente
+            </button>
+            <button
+              onClick={() => {
+                setSortByHigh(!sortByHigh);
+                if (!sortByHigh) setSortByUrgent(false);
+              }}
+              className={`px-2.5 py-1.5 text-xs font-bold rounded border transition-all cursor-pointer flex items-center gap-1 ${
+                sortByHigh
+                  ? 'bg-amber-500 text-white border-amber-500'
+                  : 'bg-white text-slate-600 border-slate-200 hover:border-amber-500 hover:text-amber-600'
+              }`}
+            >
+              <AlertTriangle className="w-3.5 h-3.5" />
+              Alta Prioridade
+            </button>
+          </div>
+
           {/* List queue items container */}
           <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-slate-50/50">
-            {occurrences
-              .filter(o => o.status === 'ABERTA' || o.status === 'AGUARDANDO_APROVACAO' || o.status === 'AGUARDANDO_CORRECAO')
-              .map((occ) => {
+            {sortedOccurrences.map((occ) => {
               const isSelected = currentOcc?.id === occ.id;
               return (
                 <div
@@ -187,6 +297,11 @@ export const TriagemView: React.FC<TriagemViewProps> = ({
                 </div>
               );
             })}
+            {sortedOccurrences.length === 0 && (
+              <div className="text-center py-8 text-slate-400 text-sm">
+                Nenhuma ocorrência pendente encontrada.
+              </div>
+            )}
           </div>
         </div>
 
@@ -348,17 +463,19 @@ export const TriagemView: React.FC<TriagemViewProps> = ({
                       1. Definir Nível de Prioridade
                     </label>
                     <div className="grid grid-cols-3 gap-2">
-                      {(['BAIXA', 'MEDIA', 'ALTA'] as Prioridade[]).map((p) => {
+                      {(['BAIXA', 'MEDIA', 'ALTA', 'URGENTE'] as Prioridade[]).map((p) => {
                         const active = triagePriority === p;
                         const colors: Record<string, string> = {
                           BAIXA: active ? 'bg-slate-100 border-slate-400 text-slate-800' : 'bg-white border-slate-200 text-slate-500',
                           MEDIA: active ? 'bg-amber-100 border-amber-400 text-amber-800 font-extrabold' : 'bg-white border-slate-200 text-slate-500',
                           ALTA: active ? 'bg-red-100 border-red-400 text-red-800 font-extrabold' : 'bg-white border-slate-200 text-slate-500',
+                          URGENTE: active ? 'bg-purple-100 border-purple-400 text-purple-800 font-extrabold' : 'bg-white border-slate-200 text-slate-500',
                         };
                         const labels: Record<string, string> = {
                           BAIXA: 'Baixa',
                           MEDIA: 'Média',
                           ALTA: 'Alta',
+                          URGENTE: 'Urgente',
                         };
                         return (
                           <button

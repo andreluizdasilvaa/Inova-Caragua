@@ -16,7 +16,8 @@ import {
   School,
   ArrowUpDown,
   User,
-  X
+  X,
+  AlertTriangle
 } from 'lucide-react';
 
 interface AprovacaoViewProps {
@@ -62,6 +63,8 @@ export const AprovacaoView: React.FC<AprovacaoViewProps> = ({
   const [selectedTipo, setSelectedTipo] = useState<string>('Todas');
   const [selectedSchool, setSelectedSchool] = useState<string>('Todas');
   const [sortOrder, setSortOrder] = useState<'recent' | 'oldest'>('recent');
+  const [filterUrgent, setFilterUrgent] = useState(false);
+  const [filterHigh, setFilterHigh] = useState(false);
   const [expandedOcc, setExpandedOcc] = useState<string | null>(null);
   const [actionFeedback, setActionFeedback] = useState<Record<string, string>>({});
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -111,6 +114,10 @@ export const AprovacaoView: React.FC<AprovacaoViewProps> = ({
       const matchesTipo = selectedTipo === 'Todas' || occ.tipoSolicitacao === selectedTipo;
       const matchesSchool = selectedSchool === 'Todas' || occ.instituicaoId === selectedSchool;
 
+      // Priority filters
+      if (filterUrgent && occ.prioridade !== 'URGENTE') return false;
+      if (filterHigh && occ.prioridade !== 'ALTA' && occ.prioridade !== 'URGENTE') return false;
+
       return matchesSearch && matchesStatus && matchesTipo && matchesSchool;
     });
 
@@ -121,7 +128,7 @@ export const AprovacaoView: React.FC<AprovacaoViewProps> = ({
     });
 
     return result;
-  }, [occurrences, searchQuery, selectedStatus, selectedTipo, selectedSchool, sortOrder]);
+  }, [occurrences, searchQuery, selectedStatus, selectedTipo, selectedSchool, sortOrder, filterUrgent, filterHigh]);
 
   const handleStatusChange = (occ: Occurrence, newStatus: StatusOcorrencia) => {
     const feedback = actionFeedback[occ.id] || '';
@@ -188,6 +195,8 @@ export const AprovacaoView: React.FC<AprovacaoViewProps> = ({
     setSelectedTipo('Todas');
     setSelectedSchool('Todas');
     setSortOrder('recent');
+    setFilterUrgent(false);
+    setFilterHigh(false);
   };
 
   return (
@@ -271,6 +280,40 @@ export const AprovacaoView: React.FC<AprovacaoViewProps> = ({
               <option value="recent">Mais Recentes</option>
               <option value="oldest">Mais Antigos</option>
             </select>
+          </div>
+        </div>
+
+        <div className="mt-4 pt-3 border-t border-slate-100">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Filtrar por Prioridade:</span>
+            <button
+              onClick={() => {
+                setFilterUrgent(!filterUrgent);
+                if (!filterUrgent) setFilterHigh(false);
+              }}
+              className={`px-2.5 py-1.5 text-xs font-bold rounded border transition-all cursor-pointer flex items-center gap-1 ${
+                filterUrgent
+                  ? 'bg-red-600 text-white border-red-600'
+                  : 'bg-white text-slate-600 border-slate-200 hover:border-red-600 hover:text-red-600'
+              }`}
+            >
+              <AlertTriangle className="w-3.5 h-3.5" />
+              Urgente
+            </button>
+            <button
+              onClick={() => {
+                setFilterHigh(!filterHigh);
+                if (!filterHigh) setFilterUrgent(false);
+              }}
+              className={`px-2.5 py-1.5 text-xs font-bold rounded border transition-all cursor-pointer flex items-center gap-1 ${
+                filterHigh
+                  ? 'bg-amber-500 text-white border-amber-500'
+                  : 'bg-white text-slate-600 border-slate-200 hover:border-amber-500 hover:text-amber-600'
+              }`}
+            >
+              <AlertTriangle className="w-3.5 h-3.5" />
+              Alta Prioridade
+            </button>
           </div>
         </div>
 

@@ -14,6 +14,7 @@ import { DetalhesView } from '@/components/views/DetalhesView';
 import { NovaOcorrenciaView } from '@/components/views/NovaOcorrenciaView';
 import { NovoAtivoView } from '@/components/views/NovoAtivoView';
 import { AprovacaoView } from '@/components/views/AprovacaoView';
+import { MapaCalorView } from '@/components/views/MapaCalorView';
 import { signOut, useSession } from 'next-auth/react';
 
 export default function AdminDashboard() {
@@ -177,6 +178,10 @@ export default function AdminDashboard() {
                 userRole="MESTRE"
                 editingAsset={selectedAsset}
               />
+             )}
+              
+            {currentView === 'mapa-calor' && (
+              <MapaCalorView />
             )}
 
             {currentView === 'aprovacao' && (

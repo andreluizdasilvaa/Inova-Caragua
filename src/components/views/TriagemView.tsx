@@ -79,9 +79,11 @@ export const TriagemView: React.FC<TriagemViewProps> = ({
     return mockAssetHistory[key] || [];
   }, [currentOcc]);
 
-  const formatDate = (date: Date | null | undefined) => {
+  const formatDate = (date: Date | string | null | undefined) => {
     if (!date) return '—';
-    return date.toLocaleDateString('pt-BR', {
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',

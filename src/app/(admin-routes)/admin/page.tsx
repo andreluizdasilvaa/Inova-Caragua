@@ -51,7 +51,22 @@ export default function AdminDashboard() {
   };
 
   const handleRegisterAsset = (asset: Asset) => {
-    setAssets((prev) => [asset, ...prev]);
+    setAssets((prev) => {
+      const exists = prev.find((a) => a.id === asset.id);
+      if (exists) {
+        return prev.map((a) => (a.id === asset.id ? asset : a));
+      }
+      return [asset, ...prev];
+    });
+    setSelectedAsset(null);
+  };
+
+  // Wrapper que limpa selectedAsset se não estiver vindo de detalhes
+  const navigateToView = (view: string) => {
+    if (view === 'novo-ativo' && currentView !== 'detalhes') {
+      setSelectedAsset(null); // Fresh form
+    }
+    setView(view);
   };
 
   const handleLogout = () => {
@@ -66,6 +81,10 @@ export default function AdminDashboard() {
         <Sidebar
           currentView={currentView}
           setView={(view) => {
+            // Clear selectedAsset when navigating away from detalhes/novo-ativo
+            if (view !== 'novo-ativo' && view !== 'detalhes') {
+              setSelectedAsset(null);
+            }
             setView(view);
             setSidebarOpen(false);
           }}
@@ -90,7 +109,7 @@ export default function AdminDashboard() {
               <DashboardView
                 occurrences={occurrences}
                 assets={assets}
-                setView={setView}
+                setView={navigateToView}
                 setSelectedOccurrence={setSelectedOccurrence}
               />
             )}
@@ -98,7 +117,7 @@ export default function AdminDashboard() {
             {currentView === 'ocorrencias' && (
               <OcorrenciasView
                 occurrences={occurrences}
-                setView={setView}
+                setView={navigateToView}
                 setSelectedOccurrence={setSelectedOccurrence}
               />
             )}
@@ -115,7 +134,7 @@ export default function AdminDashboard() {
             {currentView === 'inventario' && (
               <InventarioView
                 assets={assets}
-                setView={setView}
+                setView={navigateToView}
                 setSelectedAsset={setSelectedAsset}
               />
             )}
@@ -123,15 +142,16 @@ export default function AdminDashboard() {
             {currentView === 'lote' && (
               <LoteView
                 assets={assets}
-                setView={setView}
+                setView={navigateToView}
                 onGenerateBatch={handleGenerateBatch}
+                userRole="MESTRE"
               />
             )}
 
             {currentView === 'detalhes' && (
               <DetalhesView
                 asset={selectedAsset}
-                setView={setView}
+                setView={navigateToView}
               />
             )}
 
@@ -139,16 +159,17 @@ export default function AdminDashboard() {
               <NovaOcorrenciaView
                 assets={assets}
                 occurrences={occurrences}
-                setView={setView}
+                setView={navigateToView}
                 onRegisterOccurrence={handleRegisterOccurrence}
               />
             )}
 
             {currentView === 'novo-ativo' && (
               <NovoAtivoView
-                setView={setView}
+                setView={navigateToView}
                 onRegisterAsset={handleRegisterAsset}
                 userRole="MESTRE"
+                editingAsset={selectedAsset}
               />
             )}
           </div>

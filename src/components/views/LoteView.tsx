@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Asset, CategoriaItem, EstadoConservacao } from '@/mockData';
+import { Asset, CategoriaItem, EstadoConservacao, StatusItem, mockSchoolStats } from '@/mockData';
 import { Card, Button } from '@/components/UI';
 import { 
   ArrowLeft, 
@@ -9,7 +9,12 @@ import {
   HelpCircle, 
   CheckCircle2, 
   Grid, 
-  Download 
+  Download,
+  School,
+  ChevronDown,
+  Search,
+  Tag,
+  Hash
 } from 'lucide-react';
 
 interface LoteViewProps {
@@ -17,24 +22,53 @@ interface LoteViewProps {
   setView: (view: string) => void;
   onGenerateBatch: (newAssets: Asset[]) => void;
   instituicaoId?: string;
+  userRole?: 'MESTRE' | 'TRIAGEM' | 'ESCOLA';
+  instituicaoNome?: string;
 }
+
+const STATUS_OPTIONS: { value: StatusItem; label: string }[] = [
+  { value: 'ATIVO', label: 'Ativo' },
+  { value: 'EM_MANUTENCAO', label: 'Em Manutenção' },
+  { value: 'BAIXADO', label: 'Baixado' },
+];
 
 export const LoteView: React.FC<LoteViewProps> = ({
   assets,
   setView,
   onGenerateBatch,
-  instituicaoId
+  instituicaoId: propInstituicaoId,
+  userRole = 'ESCOLA',
+  instituicaoNome,
 }) => {
   const [prefix, setPrefix] = useState('PAT-2026-');
   const [quantity, setQuantity] = useState(6);
   const [startSequence, setStartSequence] = useState(1);
   
-  const [assetName, setAssetName] = useState('Ar Condicionado Inverter 18000 BTUs');
+  const [assetName, setAssetName] = useState('');
+  const [assetMarca, setAssetMarca] = useState('');
+  const [assetModelo, setAssetModelo] = useState('');
   const [assetCategory, setAssetCategory] = useState<CategoriaItem>('INFORMATICA');
-  const [assetLocation, setAssetLocation] = useState('Bloco C - Segundo Andar');
+  const [assetLocation, setAssetLocation] = useState('');
+  const [assetStatus, setAssetStatus] = useState<StatusItem>('ATIVO');
 
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // School selection for MESTRE
+  const [instituicaoId, setInstituicaoId] = useState(propInstituicaoId || '');
+  const [showSchoolDropdown, setShowSchoolDropdown] = useState(false);
+  const [schoolSearch, setSchoolSearch] = useState('');
+
+  const isMestre = userRole === 'MESTRE';
+
+  const selectedSchool = mockSchoolStats.find(s => s.instituicaoId === instituicaoId);
+  const selectedSchoolName = isMestre 
+    ? (selectedSchool?.nomeInstituicao || '')
+    : (instituicaoNome || 'Minha Escola');
+
+  const filteredSchools = mockSchoolStats.filter(s => 
+    s.nomeInstituicao.toLowerCase().includes(schoolSearch.toLowerCase())
+  );
 
   const previewSequence = useMemo(() => {
     const list: string[] = [];
@@ -53,23 +87,25 @@ export const LoteView: React.FC<LoteViewProps> = ({
   };
 
   const handleBatchGenerate = () => {
+    const resolvedInstituicaoId = isMestre ? instituicaoId : (propInstituicaoId || 'inst_padrao');
+
     const batch: Asset[] = previewSequence.map((pat, idx) => ({
       id: pat,
       nome: assetName,
       categoria: assetCategory,
       numeroPatrimonio: pat,
       numeroSerie: `SRL-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
-      marca: 'Carrier',
-      modelo: 'Carrier Silent X',
+      marca: assetMarca || null,
+      modelo: assetModelo || null,
       estadoConservacao: 'NOVO' as EstadoConservacao,
-      status: 'ATIVO',
+      status: assetStatus,
       dataAquisicao: new Date(),
       valorAquisicao: null,
       observacoes: null,
       createdAt: new Date(),
       updatedAt: new Date(),
-      setorId: 'setor_padrao',
-      instituicaoId: instituicaoId || 'inst_padrao',
+      setorId: assetLocation || 'setor_padrao',
+      instituicaoId: resolvedInstituicaoId,
       cadastradoPorId: null,
     }));
 
@@ -109,6 +145,67 @@ export const LoteView: React.FC<LoteViewProps> = ({
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
         <Card className="lg:col-span-5 p-4 space-y-5">
+          {/* UNIDADE ESCOLAR (apenas MESTRE) */}
+          {isMestre && (
+            <div className="space-y-3 pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <School className="w-4 h-4 text-brand-blue" />
+                <h3 className="text-sm font-bold text-slate-800">Unidade Escolar</h3>
+              </div>
+              <div className="relative">
+                <School className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 z-10" />
+                <input
+                  type="text"
+                  readOnly
+                  value={selectedSchoolName}
+                  onFocus={() => setShowSchoolDropdown(true)}
+                  placeholder="Selecione uma escola..."
+                  className="w-full text-sm rounded border border-slate-200 bg-slate-50 pl-10 pr-10 py-2 outline-none focus:bg-white focus:ring-1 focus:ring-brand-blue transition-all font-semibold cursor-pointer"
+                />
+                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+
+                {showSchoolDropdown && (
+                  <div className="absolute z-[100] mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden">
+                    <div className="p-2 border-b border-slate-100">
+                      <div className="relative">
+                        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          value={schoolSearch}
+                          onChange={(e) => setSchoolSearch(e.target.value)}
+                          placeholder="Buscar escola..."
+                          className="w-full text-xs rounded border border-slate-200 bg-slate-50 pl-8 pr-2 py-1.5 outline-none focus:ring-1 focus:ring-brand-blue font-medium"
+                          autoFocus
+                        />
+                      </div>
+                    </div>
+                    <div className="max-h-48 overflow-y-auto">
+                      {filteredSchools.length > 0 ? (
+                        filteredSchools.map((school) => (
+                          <button
+                            key={school.instituicaoId}
+                            onClick={() => {
+                              setInstituicaoId(school.instituicaoId);
+                              setSchoolSearch('');
+                              setShowSchoolDropdown(false);
+                            }}
+                            className={`w-full text-left px-4 py-2.5 hover:bg-slate-50 border-b border-slate-100 last:border-b-0 transition-colors cursor-pointer ${
+                              instituicaoId === school.instituicaoId ? 'bg-brand-ice' : ''
+                            }`}
+                          >
+                            <p className="text-sm font-semibold text-slate-800">{school.nomeInstituicao}</p>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-4 py-4 text-center text-sm text-slate-400">Nenhuma escola encontrada</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center gap-2 pb-2 border-b border-slate-100 shrink-0">
             <Settings className="w-4 h-4 text-brand-blue" />
             <h3 className="text-sm font-bold text-slate-800">Parâmetros da Sequência</h3>
@@ -141,10 +238,25 @@ export const LoteView: React.FC<LoteViewProps> = ({
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Ficha Técnica do Lote</p>
 
             <div className="space-y-3">
+              {/* Nome do Item */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nome do Modelo</label>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nome do Item</label>
                 <input type="text" value={assetName} onChange={(e) => setAssetName(e.target.value)}
                   className="w-full text-sm rounded border border-slate-200 bg-slate-50 p-2 outline-none focus:bg-white focus:ring-1 focus:ring-brand-blue transition-all font-semibold text-slate-700" />
+              </div>
+
+              {/* Marca / Modelo lado a lado */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Marca</label>
+                  <input type="text" value={assetMarca} onChange={(e) => setAssetMarca(e.target.value)} placeholder="Ex: Consul"
+                    className="w-full text-sm rounded border border-slate-200 bg-slate-50 p-2 outline-none focus:bg-white focus:ring-1 focus:ring-brand-blue transition-all font-semibold text-slate-700" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Modelo</label>
+                  <input type="text" value={assetModelo} onChange={(e) => setAssetModelo(e.target.value)} placeholder="Ex: Split Eco"
+                    className="w-full text-sm rounded border border-slate-200 bg-slate-50 p-2 outline-none focus:bg-white focus:ring-1 focus:ring-brand-blue transition-all font-semibold text-slate-700" />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -161,10 +273,20 @@ export const LoteView: React.FC<LoteViewProps> = ({
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Local de Instalação</label>
-                  <input type="text" value={assetLocation} onChange={(e) => setAssetLocation(e.target.value)}
-                    className="w-full text-sm rounded border border-slate-200 bg-slate-50 p-2 outline-none focus:bg-white focus:ring-1 focus:ring-brand-blue transition-all font-semibold text-slate-700" />
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Status do Ativo</label>
+                  <select value={assetStatus} onChange={(e) => setAssetStatus(e.target.value as StatusItem)}
+                    className="w-full text-sm rounded border border-slate-200 bg-white p-2 outline-none focus:ring-1 focus:ring-brand-blue transition-all font-semibold text-slate-700">
+                    {STATUS_OPTIONS.map(({ value, label }) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
+                  </select>
                 </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Local de Instalação</label>
+                <input type="text" value={assetLocation} onChange={(e) => setAssetLocation(e.target.value)}
+                  className="w-full text-sm rounded border border-slate-200 bg-slate-50 p-2 outline-none focus:bg-white focus:ring-1 focus:ring-brand-blue transition-all font-semibold text-slate-700" />
               </div>
             </div>
 

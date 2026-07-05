@@ -148,6 +148,8 @@ export default function SchoolPage() {
                 setView={handleSetView}
                 onGenerateBatch={handleGenerateBatch}
                 instituicaoId={instituicaoId || undefined}
+                userRole="ESCOLA"
+                instituicaoNome={schoolInfo?.nomeInstituicao}
               />
             )}
 
@@ -174,6 +176,7 @@ export default function SchoolPage() {
                 userRole="ESCOLA"
                 instituicaoId={instituicaoId || undefined}
                 instituicaoNome={schoolInfo?.nomeInstituicao}
+                editingAsset={selectedAsset}
               />
             )}
           </div>

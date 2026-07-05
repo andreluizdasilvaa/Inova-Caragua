@@ -23,6 +23,7 @@ interface NovoAtivoViewProps {
   userRole?: 'MESTRE' | 'TRIAGEM' | 'ESCOLA';
   instituicaoId?: string;
   instituicaoNome?: string;
+  editingAsset?: Asset | null; // Se fornecido, entra em modo de edição
 }
 
 const CATEGORIA_OPTIONS: { value: CategoriaItem; label: string }[] = [
@@ -56,19 +57,25 @@ export const NovoAtivoView: React.FC<NovoAtivoViewProps> = ({
   userRole = 'ESCOLA',
   instituicaoId: propInstituicaoId,
   instituicaoNome,
+  editingAsset,
 }) => {
-  // Form state
-  const [numeroPatrimonio, setNumeroPatrimonio] = useState('');
-  const [nome, setNome] = useState('');
-  const [marca, setMarca] = useState('');
-  const [modelo, setModelo] = useState('');
-  const [descricaoAdicional, setDescricaoAdicional] = useState('');
-  const [categoria, setCategoria] = useState<CategoriaItem>('INFORMATICA');
-  const [localizacao, setLocalizacao] = useState('');
+  // Determina se é edição baseado no editingAsset recebido
+  const isEditing = !!editingAsset;
+
+  // Form state - preenche com dados do editingAsset se estiver editando
+  const [numeroPatrimonio, setNumeroPatrimonio] = useState(editingAsset?.numeroPatrimonio || '');
+  const [nome, setNome] = useState(editingAsset?.nome || '');
+  const [marca, setMarca] = useState(editingAsset?.marca || '');
+  const [modelo, setModelo] = useState(editingAsset?.modelo || '');
+  const [descricaoAdicional, setDescricaoAdicional] = useState(editingAsset?.observacoes || '');
+  const [categoria, setCategoria] = useState<CategoriaItem>(editingAsset?.categoria || 'INFORMATICA');
+  const [localizacao, setLocalizacao] = useState(editingAsset?.setorId || '');
   const [showLocalizacaoDropdown, setShowLocalizacaoDropdown] = useState(false);
-  const [status, setStatus] = useState<StatusItem>('ATIVO');
-  const [dataAquisicao, setDataAquisicao] = useState('');
-  const [instituicaoId, setInstituicaoId] = useState(propInstituicaoId || '');
+  const [status, setStatus] = useState<StatusItem>(editingAsset?.status || 'ATIVO');
+  const [dataAquisicao, setDataAquisicao] = useState(
+    editingAsset?.dataAquisicao ? new Date(editingAsset.dataAquisicao).toISOString().split('T')[0] : ''
+  );
+  const [instituicaoId, setInstituicaoId] = useState(editingAsset?.instituicaoId || propInstituicaoId || '');
   const [showSchoolDropdown, setShowSchoolDropdown] = useState(false);
   const [schoolSearch, setSchoolSearch] = useState('');
 
@@ -123,7 +130,7 @@ export const NovoAtivoView: React.FC<NovoAtivoViewProps> = ({
     const resolvedInstituicaoId = isMestre ? instituicaoId : (propInstituicaoId || 'inst_padrao');
 
     const newAsset: Asset = {
-      id: numeroPatrimonio.trim() || `PAT-${Date.now()}`,
+      id: isEditing && editingAsset ? editingAsset.id : (numeroPatrimonio.trim() || `PAT-${Date.now()}`),
       nome: nome.trim(),
       categoria: categoria,
       numeroPatrimonio: numeroPatrimonio.trim() || null,
@@ -147,9 +154,12 @@ export const NovoAtivoView: React.FC<NovoAtivoViewProps> = ({
     setIsSubmitting(false);
     setShowSuccess(true);
 
+    // Redireciona imediatamente para o inventário
+    setView('inventario');
+
+    // Toast some sozinho após 2.5s
     setTimeout(() => {
       setShowSuccess(false);
-      setView('inventario');
     }, 2500);
   };
 
@@ -164,7 +174,9 @@ export const NovoAtivoView: React.FC<NovoAtivoViewProps> = ({
         <div className="fixed top-16 right-4 bg-teal-900 text-white border border-teal-700 px-4 py-3 rounded shadow-lg z-50 flex items-center gap-3 animate-fade-in max-w-sm">
           <CheckCircle className="w-5 h-5 text-teal-400 shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold leading-tight">Ativo cadastrado com sucesso!</p>
+            <p className="text-sm font-semibold leading-tight">
+              {isEditing ? 'Ativo atualizado com sucesso!' : 'Ativo cadastrado com sucesso!'}
+            </p>
             <p className="text-xs text-teal-300 mt-0.5 truncate font-medium">
               {nome || numeroPatrimonio || 'Novo item'}
             </p>
@@ -178,8 +190,12 @@ export const NovoAtivoView: React.FC<NovoAtivoViewProps> = ({
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Novo Ativo</h2>
-          <p className="text-sm text-slate-400">Cadastre um novo item no inventário patrimonial.</p>
+          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
+            {isEditing ? 'Editar Ativo' : 'Novo Ativo'}
+          </h2>
+          <p className="text-sm text-slate-400">
+            {isEditing ? 'Edite as informações do ativo no inventário patrimonial.' : 'Cadastre um novo item no inventário patrimonial.'}
+          </p>
         </div>
       </div>
 
@@ -557,7 +573,7 @@ export const NovoAtivoView: React.FC<NovoAtivoViewProps> = ({
                 </span>
               ) : (
                 <span className="flex items-center gap-1.5">
-                  <CheckCircle className="w-5 h-5" /> Cadastrar Ativo
+                  <CheckCircle className="w-5 h-5" /> {isEditing ? 'Atualizar Ativo' : 'Cadastrar Ativo'}
                 </span>
               )}
             </Button>

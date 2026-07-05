@@ -1,6 +1,7 @@
 import { 
   Papel, 
   CargoEscolar, 
+  TipoInstituicao,
   CategoriaItem, 
   EstadoConservacao, 
   StatusItem, 
@@ -13,6 +14,7 @@ import {
 export type { 
   Papel, 
   CargoEscolar, 
+  TipoInstituicao,
   CategoriaItem, 
   EstadoConservacao, 
   StatusItem, 
@@ -78,11 +80,10 @@ export interface Asset {
   createdAt: Date;
   updatedAt: Date;
   setorId: string;
-  instituicaoId: string;
   cadastradoPorId?: string | null;
 }
 
-export interface AssetHistory {
+export interface OccurrenceHistory {
   id: string;
   statusAnterior?: StatusOcorrencia | null;
   statusNovo: StatusOcorrencia;

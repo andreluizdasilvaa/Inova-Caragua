@@ -91,28 +91,7 @@ export const InventarioView: React.FC<InventarioViewProps> = ({
           </Button>
           <Button 
             variant="secondary" 
-            onClick={() => {
-              const newAsset: Asset = {
-                id: `PAT-2026-${String(assets.length + 1).padStart(3, '0')}`,
-                nome: 'Novo Aparelho Escolar',
-                categoria: 'INFORMATICA',
-                numeroPatrimonio: `PAT-2026-${String(assets.length + 1).padStart(3, '0')}`,
-                marca: 'Consul',
-                modelo: 'Inverter Eco',
-                estadoConservacao: 'NOVO',
-                status: 'ATIVO',
-                dataAquisicao: new Date(),
-                valorAquisicao: null,
-                observacoes: null,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-                setorId: 'setor_padrao',
-                instituicaoId: 'inst_padrao',
-                cadastradoPorId: null,
-              };
-              setSelectedAsset(newAsset);
-              setView('detalhes');
-            }}
+            onClick={() => setView('novo-ativo')}
             className="bg-brand-blue hover:bg-brand-teal flex items-center gap-1 text-xs py-2 px-3"
           >
             <Plus className="w-4 h-4" />

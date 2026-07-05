@@ -12,6 +12,7 @@ import { InventarioView } from '@/components/views/InventarioView';
 import { LoteView } from '@/components/views/LoteView';
 import { DetalhesView } from '@/components/views/DetalhesView';
 import { NovaOcorrenciaView } from '@/components/views/NovaOcorrenciaView';
+import { NovoAtivoView } from '@/components/views/NovoAtivoView';
 import { signOut, useSession } from 'next-auth/react';
 
 export default function AdminDashboard() {
@@ -47,6 +48,10 @@ export default function AdminDashboard() {
 
   const handleRegisterOccurrence = (occurrence: Occurrence) => {
     setOccurrences((prev) => [occurrence, ...prev]);
+  };
+
+  const handleRegisterAsset = (asset: Asset) => {
+    setAssets((prev) => [asset, ...prev]);
   };
 
   const handleLogout = () => {
@@ -136,6 +141,14 @@ export default function AdminDashboard() {
                 occurrences={occurrences}
                 setView={setView}
                 onRegisterOccurrence={handleRegisterOccurrence}
+              />
+            )}
+
+            {currentView === 'novo-ativo' && (
+              <NovoAtivoView
+                setView={setView}
+                onRegisterAsset={handleRegisterAsset}
+                userRole="MESTRE"
               />
             )}
           </div>

@@ -43,6 +43,7 @@ function formatInstituicao(inst: any) {
     nome: inst.nome,
     tipo: inst.tipo,
     codigoInep: inst.codigoInep,
+    email: inst.email,
     endereco: inst.endereco,
     bairro: inst.bairro,
     telefone: inst.telefone,
@@ -55,4 +56,34 @@ function formatInstituicao(inst: any) {
     setorCount: inst._count?.setores || 0,
     itemCount: inst._count?.itens || 0,
   };
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const data = await request.json();
+    
+    if (!data.nome || !data.tipo) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    const newInst = await prisma.instituicao.create({
+      data: {
+        nome: data.nome,
+        tipo: data.tipo,
+        codigoInep: data.codigoInep || null,
+        email: data.email || null,
+        endereco: data.endereco || null,
+        bairro: data.bairro || null,
+        telefone: data.telefone || null,
+        latitude: data.latitude ? parseFloat(data.latitude) : null,
+        longitude: data.longitude ? parseFloat(data.longitude) : null,
+        ativo: data.ativo ?? true,
+      },
+    });
+
+    return NextResponse.json(formatInstituicao(newInst), { status: 201 });
+  } catch (error) {
+    console.error('Error creating institution:', error);
+    return NextResponse.json({ error: 'Failed to create institution' }, { status: 500 });
+  }
 }

@@ -107,6 +107,15 @@ export const api = {
         method: 'DELETE',
         body: JSON.stringify({ id }),
       }),
+
+    createBatch: (items: any[], instituicaoId: string, cadastradoPorId?: string) =>
+      request<{ created: number; errors: { index: number; message: string }[] }>(
+        `${BASE_URL}/itens/batch`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ items, instituicaoId, cadastradoPorId }),
+        }
+      ),
   },
 
   // ── Institutions ──

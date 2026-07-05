@@ -2,11 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { Occurrence, Asset } from '@/types';
-import { TriageSidebar } from '@/components/TriageSidebar';
 import { Header } from '@/components/Header';
+import { TriageSidebar } from '@/components/TriageSidebar';
 import { TriagemView } from '@/components/views/TriagemView';
+import { useLiveUpdate } from '@/hooks/useLiveUpdate';
 import { OcorrenciasView } from '@/components/views/OcorrenciasView';
 import { signOut, useSession } from 'next-auth/react';
+import { api } from '@/lib/api';
 
 export default function TriageDashboard() {
   const { data: session } = useSession();
@@ -45,13 +47,26 @@ export default function TriageDashboard() {
   // Mobile sidebar visibility
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Handlers
-  const handleUpdateOccurrence = (updated: Occurrence) => {
-    setOccurrences((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+  // Use live update hook for 10s polling and security check
+  useLiveUpdate(occurrences, setOccurrences);
 
-    // Also update selectedOccurrence state to sync right panel
-    if (selectedOccurrence?.id === updated.id) {
-      setSelectedOccurrence(updated);
+  // Handlers
+  const handleUpdateOccurrence = async (updated: Occurrence) => {
+    try {
+      const result = await api.occurrences.update(updated.id, {
+        status: updated.status,
+        prioridade: updated.prioridade,
+        tipoSolicitacao: updated.tipoSolicitacao,
+        observacoesTriagem: updated.observacoesTriagem,
+        motivoRecusa: updated.motivoRecusa,
+        dataTriagem: updated.dataTriagem,
+      });
+      setOccurrences((prev) => prev.map((o) => (o.id === result.id ? result : o)));
+      if (selectedOccurrence?.id === result.id) {
+        setSelectedOccurrence(result);
+      }
+    } catch (err) {
+      console.error('Error updating occurrence:', err);
     }
   };
 

@@ -3,6 +3,7 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { Asset, Occurrence, TipoSolicitacao, Prioridade } from '@/types';
 import { Card, Button, TIPO_SOLICITACAO_LABEL } from '@/components/UI';
+import { api } from '@/lib/api';
 import { 
   ArrowLeft, 
   Search, 
@@ -82,6 +83,19 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
   const [showSuccess, setShowSuccess] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // === Setores ===
+  const [setores, setSetores] = useState<any[]>([]);
+  const [selectedSetorId, setSelectedSetorId] = useState<string>('');
+
+  // Fetch setores
+  useEffect(() => {
+    if (propInstituicaoId) {
+      api.setores.list(propInstituicaoId)
+        .then(data => setSetores(data))
+        .catch(err => console.error('Erro ao buscar setores:', err));
+    }
+  }, [propInstituicaoId]);
+
   // Pre-fill form when editing
   useEffect(() => {
     if (isEditing && editingOccurrence) {
@@ -89,6 +103,7 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
       setTitle(editingOccurrence.titulo);
       setDescription(editingOccurrence.descricao);
       setLocalizacao(editingOccurrence.localizacaoDescricao || '');
+      setSelectedSetorId(editingOccurrence.setorId || '');
       setSolicitacaoType(editingOccurrence.tipoSolicitacao);
       setPriority(editingOccurrence.prioridade || 'MEDIA');
     }
@@ -119,8 +134,10 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
       newErrors.description = 'A descrição deve ter pelo menos 10 caracteres.';
     }
     
-    if (!localizacao.trim()) {
-      newErrors.localizacao = 'Informe a localização.';
+    if (setores.length > 0) {
+      if (!selectedSetorId) newErrors.localizacao = 'Selecione um setor da instituição.';
+    } else {
+      if (!localizacao.trim()) newErrors.localizacao = 'Informe a localização.';
     }
     
     setErrors(newErrors);
@@ -196,7 +213,8 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
       tipoSolicitacao: solicitacaoType,
       status: isEditing && editingOccurrence ? editingOccurrence.status : 'ABERTA',
       prioridade: canEditPriority ? priority : (isEditing && editingOccurrence ? editingOccurrence.prioridade : null),
-      localizacaoDescricao: localizacao.trim(),
+      localizacaoDescricao: setores.length > 0 ? null : localizacao.trim(),
+      setorId: setores.length > 0 ? selectedSetorId : null,
       numeroPatrimonioTexto: selectedAsset?.numeroPatrimonio || null,
       anexos: attachedFiles.map((file, idx) => ({
         id: `anexo_${Date.now()}_${idx}`,
@@ -221,7 +239,6 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
       createdAt: isEditing && editingOccurrence ? editingOccurrence.createdAt : new Date(),
       updatedAt: new Date(),
       instituicaoId: isEditing && editingOccurrence ? editingOccurrence.instituicaoId : (propInstituicaoId || ''),
-      setorId: isEditing && editingOccurrence ? editingOccurrence.setorId : null,
       itemId: selectedAsset?.id || (isEditing && editingOccurrence ? editingOccurrence.itemId : null),
       criadoPorId: isEditing && editingOccurrence ? editingOccurrence.criadoPorId : (propCriadoPorId || 'user_atual'),
       triagemPorId: isEditing && editingOccurrence ? editingOccurrence.triagemPorId : null,
@@ -412,10 +429,23 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
 
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Localização <span className="text-rose-500">*</span></label>
-              <input type="text" value={localizacao} onChange={(e) => setLocalizacao(e.target.value)}
-                placeholder="Ex: Sala 04, Segundo andar"
-                className={`w-full text-sm rounded border p-2.5 outline-none focus:ring-1 focus:ring-brand-blue transition-all font-medium ${errors.localizacao ? 'border-rose-300 bg-rose-50' : 'border-slate-200'}`}
-              />
+              {setores.length > 0 ? (
+                <select
+                  value={selectedSetorId}
+                  onChange={(e) => setSelectedSetorId(e.target.value)}
+                  className={`w-full text-sm rounded border p-2.5 outline-none focus:ring-1 focus:ring-brand-blue transition-all font-medium ${errors.localizacao ? 'border-rose-300 bg-rose-50' : 'border-slate-200'}`}
+                >
+                  <option value="">Selecione um setor...</option>
+                  {setores.map(s => (
+                    <option key={s.id} value={s.id}>{s.nome}</option>
+                  ))}
+                </select>
+              ) : (
+                <input type="text" value={localizacao} onChange={(e) => setLocalizacao(e.target.value)}
+                  placeholder="Ex: Sala 04, Segundo andar"
+                  className={`w-full text-sm rounded border p-2.5 outline-none focus:ring-1 focus:ring-brand-blue transition-all font-medium ${errors.localizacao ? 'border-rose-300 bg-rose-50' : 'border-slate-200'}`}
+                />
+              )}
               {errors.localizacao && <p className="text-xs font-bold text-rose-600 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" />{errors.localizacao}</p>}
             </div>
 

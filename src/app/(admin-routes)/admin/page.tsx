@@ -14,9 +14,12 @@ import { DetalhesView } from '@/components/views/DetalhesView';
 import { NovaOcorrenciaView } from '@/components/views/NovaOcorrenciaView';
 import { NovoAtivoView } from '@/components/views/NovoAtivoView';
 import { AprovacaoView } from '@/components/views/AprovacaoView';
+import { UsuariosView } from '@/components/views/UsuariosView';
+import { InstituicoesView } from '@/components/views/InstituicoesView';
 import dynamic from 'next/dynamic';
 const MapaCalorView = dynamic(() => import('@/components/views/MapaCalorView').then(mod => mod.MapaCalorView), { ssr: false });
 import { signOut, useSession } from 'next-auth/react';
+import { useLiveUpdate } from '@/hooks/useLiveUpdate';
 
 function LoadingSpinner() {
   return (
@@ -35,6 +38,9 @@ export default function AdminDashboard() {
   const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Use live update hook for 10s polling and security check
+  useLiveUpdate(occurrences, setOccurrences);
 
   // Fetch data
   const fetchData = useCallback(async () => {
@@ -83,6 +89,7 @@ export default function AdminDashboard() {
         prestadorServico: updated.prestadorServico,
         triagemPorId: updated.triagemPorId,
         aprovadoPorId: updated.aprovadoPorId,
+        motivoRecusa: updated.motivoRecusa,
       });
       setOccurrences((prev) => prev.map((o) => (o.id === result.id ? result : o)));
       if (selectedOccurrence?.id === updated.id) {
@@ -312,6 +319,14 @@ export default function AdminDashboard() {
                     occurrences={occurrences}
                     onUpdateOccurrence={handleUpdateOccurrence}
                   />
+                )}
+
+                {currentView === 'usuarios' && (
+                  <UsuariosView />
+                )}
+
+                {currentView === 'instituicoes' && (
+                  <InstituicoesView />
                 )}
               </>
             )}

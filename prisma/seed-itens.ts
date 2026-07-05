@@ -125,7 +125,7 @@ async function main() {
 
             // 2. Prepara os itens a serem criados em lote para este setor
             const novosItens = [];
-            for (const itemBp of bp.itens) {
+            for (const itemBp of bp.itens as any[]) {
                 const qtd = itemBp.quantidade || 1;
                 
                 for (let i = 0; i < qtd; i++) {

@@ -13,6 +13,7 @@ import { DetalhesView } from '@/components/views/DetalhesView';
 import { NovaOcorrenciaView } from '@/components/views/NovaOcorrenciaView';
 import { NovoAtivoView } from '@/components/views/NovoAtivoView';
 import { signOut, useSession } from 'next-auth/react';
+import { useLiveUpdate } from '@/hooks/useLiveUpdate';
 
 function LoadingSpinner() {
   return (
@@ -39,6 +40,9 @@ export default function SchoolPage() {
 
   const instituicaoId = session?.user?.instituicaoId || null;
 
+  // Use live update hook for 10s polling and security check
+  useLiveUpdate(schoolOccurrences, setSchoolOccurrences, instituicaoId);
+
   // Fetch data
   const fetchData = useCallback(async () => {
     if (!instituicaoId) return;
@@ -51,8 +55,8 @@ export default function SchoolPage() {
         api.instituicoes.list(),
       ]);
 
-      const occurrences = Array.isArray(occResult) ? occResult : occResult.data || [];
-      const items = Array.isArray(itemsResult) ? itemsResult : itemsResult.data || [];
+      const occurrences = Array.isArray(occResult) ? occResult : (occResult as any).data || [];
+      const items = Array.isArray(itemsResult) ? itemsResult : (itemsResult as any).data || [];
 
       setSchoolOccurrences(occurrences);
       setSchoolAssets(items);
@@ -80,6 +84,7 @@ export default function SchoolPage() {
         prioridade: updated.prioridade,
         observacoesMestre: updated.observacoesMestre,
         observacoesTriagem: updated.observacoesTriagem,
+        motivoRecusa: updated.motivoRecusa,
       });
       setSchoolOccurrences(prev => prev.map(o => o.id === result.id ? result : o));
     } catch (err) {

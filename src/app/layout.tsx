@@ -21,6 +21,8 @@ export const metadata: Metadata = {
     },
 };
 
+import { NotificationProvider } from "@/components/layout/NotificationContext";
+
 export default function RootLayout({
     children,
 }: Readonly<{
@@ -32,7 +34,9 @@ export default function RootLayout({
                 className={`${geistSans.variable} ${geistMono.variable} antialiased`}
             >
                 <NextAuthSessionProvider>
-                    {children}
+                    <NotificationProvider>
+                        {children}
+                    </NotificationProvider>
                 </NextAuthSessionProvider>
             </body>
         </html>

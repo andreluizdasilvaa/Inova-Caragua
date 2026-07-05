@@ -137,6 +137,7 @@ model Instituicao {
     nome       String
     tipo       TipoInstituicao @default(OUTRO)
     codigoInep String?         @unique
+    email      String?
     endereco   String?
     bairro     String?
     telefone   String?

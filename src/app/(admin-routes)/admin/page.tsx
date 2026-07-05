@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Occurrence, Asset } from '@/mockData';
+import { Occurrence, Asset } from '@/types';
 import { mockOccurrences, mockAssets } from '@/mockData';
 import { Sidebar } from '@/components/Sidebar';
 import { Header } from '@/components/Header';

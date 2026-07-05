@@ -13,6 +13,8 @@ import { LoteView } from '@/components/views/LoteView';
 import { DetalhesView } from '@/components/views/DetalhesView';
 import { NovaOcorrenciaView } from '@/components/views/NovaOcorrenciaView';
 import { NovoAtivoView } from '@/components/views/NovoAtivoView';
+import { AprovacaoView } from '@/components/views/AprovacaoView';
+import { MapaCalorView } from '@/components/views/MapaCalorView';
 import dynamic from 'next/dynamic';
 const MapaCalorView = dynamic(() => import('@/components/views/MapaCalorView').then(mod => mod.MapaCalorView), { ssr: false });
 import { signOut, useSession } from 'next-auth/react';
@@ -121,6 +123,9 @@ export default function AdminDashboard() {
                 occurrences={occurrences}
                 setView={navigateToView}
                 setSelectedOccurrence={setSelectedOccurrence}
+                onUpdateOccurrence={handleUpdateOccurrence}
+                canEditOwn={true}
+                canEditPriority={true}
               />
             )}
 
@@ -163,6 +168,8 @@ export default function AdminDashboard() {
                 occurrences={occurrences}
                 setView={navigateToView}
                 onRegisterOccurrence={handleRegisterOccurrence}
+                editingOccurrence={selectedOccurrence}
+                canEditPriority={true}
               />
             )}
 
@@ -177,6 +184,13 @@ export default function AdminDashboard() {
               
             {currentView === 'mapa-calor' && (
               <MapaCalorView />
+            )}
+
+            {currentView === 'aprovacao' && (
+              <AprovacaoView
+                occurrences={occurrences}
+                onUpdateOccurrence={handleUpdateOccurrence}
+              />
             )}
           </div>
         </main>

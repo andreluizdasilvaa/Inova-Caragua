@@ -44,6 +44,7 @@ export interface Occurrence {
   prioridade: Prioridade | null;
   localizacaoDescricao?: string | null;
   numeroPatrimonioTexto?: string | null;
+  imagens?: string[] | null; // URLs das imagens anexadas (object URLs de previews)
   observacoesTriagem?: string | null;
   observacoesMestre?: string | null;
   motivoRecusa?: string | null;
@@ -111,6 +112,10 @@ export const mockOccurrences: Occurrence[] = [
     prioridade: 'ALTA',
     localizacaoDescricao: 'Segundo andar',
     numeroPatrimonioTexto: '#PAT-HID-204',
+    imagens: [
+      'https://placehold.co/800x600/1e293b/e2f1fd?text=Vazamento+1',
+      'https://placehold.co/800x600/334155/e2f1fd?text=Vazamento+2'
+    ],
     createdAt: new Date('2023-10-24T08:30:00.000Z'),
     updatedAt: new Date('2023-10-24T08:30:00.000Z'),
     instituicaoId: 'inst_central_high',

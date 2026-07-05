@@ -30,6 +30,9 @@ export default function SchoolPage() {
   // Active View Router - must come before early return
   const [currentView, setView] = useState<string>('dashboard');
 
+  // Local state for occurrences (to allow priority editing)
+  const [schoolOccurrencesState, setSchoolOccurrences] = useState<Occurrence[]>([]);
+  
   // Selected detail items
   const [selectedOccurrence, setSelectedOccurrence] = useState<Occurrence | null>(null);
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
@@ -46,6 +49,13 @@ export default function SchoolPage() {
     if (!instituicaoId) return [];
     return mockOccurrences.filter(o => o.instituicaoId === instituicaoId);
   }, [instituicaoId]);
+
+  // Sync local state with filtered data
+  React.useEffect(() => {
+    if (schoolOccurrences.length > 0 && schoolOccurrencesState.length === 0) {
+      setSchoolOccurrences(schoolOccurrences);
+    }
+  }, [schoolOccurrences, schoolOccurrencesState.length]);
 
   const schoolAssets = useMemo<Asset[]>(() => {
     if (!instituicaoId) return [];
@@ -128,9 +138,13 @@ export default function SchoolPage() {
 
             {currentView === 'ocorrencias' && (
               <OcorrenciasView
-                occurrences={schoolOccurrences}
+                occurrences={schoolOccurrencesState.length > 0 ? schoolOccurrencesState : schoolOccurrences}
                 setView={handleSetView}
                 setSelectedOccurrence={setSelectedOccurrence}
+                onUpdateOccurrence={(updated) => {
+                  setSchoolOccurrences((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+                }}
+                canEditOwn={true}
               />
             )}
 
@@ -166,6 +180,7 @@ export default function SchoolPage() {
                 occurrences={schoolOccurrences}
                 setView={handleSetView}
                 onRegisterOccurrence={handleRegisterOccurrence}
+                editingOccurrence={selectedOccurrence}
               />
             )}
 

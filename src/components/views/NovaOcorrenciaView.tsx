@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useRef, useMemo, useCallback } from 'react';
-import { Asset, Occurrence, TipoSolicitacao } from '@/mockData';
+import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
+import { Asset, Occurrence, TipoSolicitacao, Prioridade } from '@/mockData';
 import { Card, Button, TIPO_SOLICITACAO_LABEL } from '@/components/UI';
 import { 
   ArrowLeft, 
@@ -25,9 +25,10 @@ interface NovaOcorrenciaViewProps {
   occurrences: Occurrence[];
   setView: (view: string) => void;
   onRegisterOccurrence: (occurrence: Occurrence) => void;
+  editingOccurrence?: Occurrence | null;
+  canEditPriority?: boolean;
 }
 
-// Tipos de Solicitação
 const SOLICITACAO_TYPES: { id: TipoSolicitacao; label: string; description: string; icon: React.FC<React.SVGProps<SVGSVGElement>> }[] = [
   { id: 'REPARO', label: 'Reparo', description: 'Falha / Quebra', icon: AlertTriangle },
   { id: 'SERVICO', label: 'Serviço', description: 'Mão de obra', icon: Wrench },
@@ -36,7 +37,6 @@ const SOLICITACAO_TYPES: { id: TipoSolicitacao; label: string; description: stri
   { id: 'OUTRO', label: 'Outro', description: 'Demais solicitações', icon: HardHat },
 ];
 
-// Interface para arquivos anexados
 interface AttachedFile {
   name: string;
   size: number;
@@ -44,24 +44,31 @@ interface AttachedFile {
   preview?: string;
 }
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
 
 export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
   assets,
   occurrences,
   setView,
-  onRegisterOccurrence
+  onRegisterOccurrence,
+  editingOccurrence = null,
+  canEditPriority = false
 }) => {
+  const isEditing = !!editingOccurrence;
+
   // === Estado do formulário ===
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchPatrimonio, setSearchPatrimonio] = useState('');
+  const [searchNome, setSearchNome] = useState('');
   const [showAssetDropdown, setShowAssetDropdown] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+  const [activeSearchField, setActiveSearchField] = useState<'patrimonio' | 'nome' | null>(null);
   
   const [solicitacaoType, setSolicitacaoType] = useState<TipoSolicitacao>('REPARO');
   const [title, setTitle] = useState('');
   const [localizacao, setLocalizacao] = useState('');
   const [description, setDescription] = useState('');
+  const [priority, setPriority] = useState<Prioridade>('MEDIA');
   
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -71,16 +78,27 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
   const [showSuccess, setShowSuccess] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Assets filtrados
+  // Pre-fill form when editing
+  useEffect(() => {
+    if (isEditing && editingOccurrence) {
+      setTitle(editingOccurrence.titulo);
+      setDescription(editingOccurrence.descricao);
+      setLocalizacao(editingOccurrence.localizacaoDescricao || '');
+      setSolicitacaoType(editingOccurrence.tipoSolicitacao);
+      setPriority(editingOccurrence.prioridade || 'MEDIA');
+    }
+  }, [isEditing, editingOccurrence]);
+
+  // Assets filtrados - combina os dois campos de busca
   const filteredAssets = useMemo(() => {
-    if (!searchQuery) return assets;
-    const q = searchQuery.toLowerCase();
-    return assets.filter(a => 
-      (a.numeroPatrimonio && a.numeroPatrimonio.toLowerCase().includes(q)) ||
-      a.nome.toLowerCase().includes(q) ||
-      (a.marca && a.marca.toLowerCase().includes(q))
-    );
-  }, [assets, searchQuery]);
+    const qPat = searchPatrimonio.toLowerCase();
+    const qNome = searchNome.toLowerCase();
+    return assets.filter(a => {
+      const matchPatrimonio = !searchPatrimonio || (a.numeroPatrimonio && a.numeroPatrimonio.toLowerCase().includes(qPat));
+      const matchNome = !searchNome || a.nome.toLowerCase().includes(qNome);
+      return matchPatrimonio && matchNome;
+    });
+  }, [assets, searchPatrimonio, searchNome]);
 
   // Validação
   const validate = useCallback((): boolean => {
@@ -106,13 +124,15 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
 
   const handleSelectAsset = (asset: Asset) => {
     setSelectedAsset(asset);
-    setSearchQuery(`${asset.numeroPatrimonio || ''} - ${asset.nome}`);
+    setSearchPatrimonio(asset.numeroPatrimonio || '');
+    setSearchNome(asset.nome);
     setShowAssetDropdown(false);
   };
 
   const handleClearAsset = () => {
     setSelectedAsset(null);
-    setSearchQuery('');
+    setSearchPatrimonio('');
+    setSearchNome('');
   };
 
   const processFiles = (files: File[]) => {
@@ -158,33 +178,39 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
     if (!validate()) return;
     setIsSubmitting(true);
     
+    // Extrai as URLs de preview das imagens anexadas
+    const imageUrls = attachedFiles
+      .filter(f => f.preview)
+      .map(f => f.preview as string);
+
     const newOccurrence: Occurrence = {
-      id: `occ_${Date.now()}`,
-      numero: occurrences.length + 1,
+      id: isEditing && editingOccurrence ? editingOccurrence.id : `occ_${Date.now()}`,
+      numero: isEditing && editingOccurrence ? editingOccurrence.numero : occurrences.length + 1,
       titulo: title.trim(),
       descricao: description.trim(),
       tipoSolicitacao: solicitacaoType,
-      status: 'ABERTA',
-      prioridade: null,
+      status: isEditing && editingOccurrence ? editingOccurrence.status : 'ABERTA',
+      prioridade: isEditing && editingOccurrence ? editingOccurrence.prioridade : (canEditPriority ? priority : null),
       localizacaoDescricao: localizacao.trim(),
       numeroPatrimonioTexto: selectedAsset?.numeroPatrimonio || null,
-      observacoesTriagem: null,
-      observacoesMestre: null,
-      motivoRecusa: null,
-      prestadorServico: null,
-      valorOrcamento: null,
-      dataVisitaAgendada: null,
-      dataConclusao: null,
-      dataTriagem: null,
-      dataAprovacao: null,
-      createdAt: new Date(),
+      imagens: imageUrls.length > 0 ? imageUrls : (isEditing && editingOccurrence?.imagens ? editingOccurrence.imagens : null),
+      observacoesTriagem: isEditing && editingOccurrence ? editingOccurrence.observacoesTriagem : null,
+      observacoesMestre: isEditing && editingOccurrence ? editingOccurrence.observacoesMestre : null,
+      motivoRecusa: isEditing && editingOccurrence ? editingOccurrence.motivoRecusa : null,
+      prestadorServico: isEditing && editingOccurrence ? editingOccurrence.prestadorServico : null,
+      valorOrcamento: isEditing && editingOccurrence ? editingOccurrence.valorOrcamento : null,
+      dataVisitaAgendada: isEditing && editingOccurrence ? editingOccurrence.dataVisitaAgendada : null,
+      dataConclusao: isEditing && editingOccurrence ? editingOccurrence.dataConclusao : null,
+      dataTriagem: isEditing && editingOccurrence ? editingOccurrence.dataTriagem : null,
+      dataAprovacao: isEditing && editingOccurrence ? editingOccurrence.dataAprovacao : null,
+      createdAt: isEditing && editingOccurrence ? editingOccurrence.createdAt : new Date(),
       updatedAt: new Date(),
-      instituicaoId: 'inst_padrao',
-      setorId: null,
-      itemId: selectedAsset?.id || null,
-      criadoPorId: 'user_atual',
-      triagemPorId: null,
-      aprovadoPorId: null,
+      instituicaoId: isEditing && editingOccurrence ? editingOccurrence.instituicaoId : 'inst_padrao',
+      setorId: isEditing && editingOccurrence ? editingOccurrence.setorId : null,
+      itemId: selectedAsset?.id || (isEditing && editingOccurrence ? editingOccurrence.itemId : null),
+      criadoPorId: isEditing && editingOccurrence ? editingOccurrence.criadoPorId : 'user_atual',
+      triagemPorId: isEditing && editingOccurrence ? editingOccurrence.triagemPorId : null,
+      aprovadoPorId: isEditing && editingOccurrence ? editingOccurrence.aprovadoPorId : null,
     };
     
     setTimeout(() => {
@@ -203,7 +229,9 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
       {showSuccess && (
         <div className="fixed top-16 right-4 bg-teal-900 text-white border border-teal-700 px-4 py-2.5 rounded shadow-lg z-50 flex items-center gap-2 animate-fade-in">
           <CheckCircle className="w-5 h-5 text-teal-400 shrink-0" />
-          <span className="text-sm font-semibold">Ocorrência registrada com sucesso!</span>
+          <span className="text-sm font-semibold">
+            {isEditing ? 'Ocorrência atualizada com sucesso!' : 'Ocorrência registrada com sucesso!'}
+          </span>
         </div>
       )}
 
@@ -212,8 +240,12 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Nova Ocorrência</h2>
-          <p className="text-sm text-slate-400">Registre um novo chamado de manutenção ou inspeção.</p>
+          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
+            {isEditing ? 'Editar Ocorrência' : 'Nova Ocorrência'}
+          </h2>
+          <p className="text-sm text-slate-400">
+            {isEditing ? 'Altere os dados da ocorrência.' : 'Registre um novo chamado de manutenção ou inspeção.'}
+          </p>
         </div>
       </div>
 
@@ -221,30 +253,53 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
         <div className="lg:col-span-8 space-y-5">
           
           {/* 1. IDENTIFICAÇÃO */}
-          <Card className="p-5 space-y-4">
+          <div className="bg-white border border-slate-200/80 rounded-lg p-5 space-y-4">
             <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
               <Search className="w-4 h-4 text-brand-blue" />
               <h3 className="text-sm font-bold text-slate-800">1. Identificação do Item</h3>
             </div>
 
-            <div className="relative">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Buscar por patrimônio ou nome do ativo..."
-                value={searchQuery}
-                onChange={(e) => { setSearchQuery(e.target.value); setSelectedAsset(null); setShowAssetDropdown(true); }}
-                onFocus={() => setShowAssetDropdown(true)}
-                className="w-full text-sm rounded border border-slate-200 bg-slate-50 pl-10 pr-10 py-2.5 focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-blue transition-all placeholder:text-slate-400 font-semibold"
-              />
-              {searchQuery && (
-                <button onClick={handleClearAsset} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer">
-                  <X className="w-4 h-4" />
-                </button>
-              )}
+            {/* Campo de busca por patrimônio */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Buscar por Patrimônio</label>
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Ex: PAT-2023-001"
+                  value={searchPatrimonio}
+                  onChange={(e) => { setSearchPatrimonio(e.target.value); setSelectedAsset(null); setShowAssetDropdown(true); }}
+                  onFocus={() => setShowAssetDropdown(true)}
+                  className="w-full text-sm rounded border border-slate-200 bg-slate-50 pl-10 pr-10 py-2.5 focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-blue transition-all placeholder:text-slate-400 font-semibold"
+                />
+                {searchPatrimonio && (
+                  <button onClick={() => { setSearchPatrimonio(''); handleClearAsset(); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer">
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
 
-              {showAssetDropdown && searchQuery && !selectedAsset && (
-                <div className="absolute z-10 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+            {/* Campo de busca por nome do item */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Buscar por Nome do Item</label>
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Ex: Ar Condicionado"
+                  value={searchNome}
+                  onChange={(e) => { setSearchNome(e.target.value); setSelectedAsset(null); setShowAssetDropdown(true); }}
+                  onFocus={() => setShowAssetDropdown(true)}
+                  className="w-full text-sm rounded border border-slate-200 bg-slate-50 pl-10 pr-10 py-2.5 focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-blue transition-all placeholder:text-slate-400 font-semibold"
+                />
+              </div>
+            </div>
+
+            {/* Dropdown de resultados */}
+            {showAssetDropdown && (searchPatrimonio || searchNome) && !selectedAsset && (
+              <div className="relative">
+                <div className="absolute z-[100] mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
                   {filteredAssets.length > 0 ? filteredAssets.map((asset) => (
                     <button key={asset.id} onClick={() => handleSelectAsset(asset)}
                       className="w-full text-left px-4 py-2.5 hover:bg-slate-50 border-b border-slate-100 last:border-b-0 transition-colors cursor-pointer">
@@ -257,25 +312,26 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
                     <div className="px-4 py-4 text-center text-sm text-slate-400">Nenhum ativo encontrado</div>
                   )}
                 </div>
-              )}
+              </div>
+            )}
 
-              {selectedAsset && (
-                <div className="mt-2.5 p-3 bg-brand-ice border border-brand-blue/30 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded bg-brand-blue/10 flex items-center justify-center">
-                        <CheckCircle className="w-4 h-4 text-brand-blue" />
-                      </div>
-                      <div>
-                        <span className="font-mono text-xs font-bold text-brand-blue">{selectedAsset.numeroPatrimonio || selectedAsset.id}</span>
-                        <p className="text-sm font-bold text-slate-800">{selectedAsset.nome}</p>
-                      </div>
+            {/* Ativo selecionado */}
+            {selectedAsset && (
+              <div className="p-3 bg-brand-ice border border-brand-blue/30 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded bg-brand-blue/10 flex items-center justify-center">
+                      <CheckCircle className="w-4 h-4 text-brand-blue" />
+                    </div>
+                    <div>
+                      <span className="font-mono text-xs font-bold text-brand-blue">{selectedAsset.numeroPatrimonio || selectedAsset.id}</span>
+                      <p className="text-sm font-bold text-slate-800">{selectedAsset.nome}</p>
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
-          </Card>
+              </div>
+            )}
+          </div>
 
           {/* 2. DETALHE */}
           <Card className="p-5 space-y-4">
@@ -302,6 +358,32 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
                 })}
               </div>
             </div>
+
+            {canEditPriority && (
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Prioridade</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['BAIXA', 'MEDIA', 'ALTA'] as Prioridade[]).map((p) => {
+                    const isActive = priority === p;
+                    const colors: Record<string, string> = {
+                      BAIXA: isActive ? 'bg-slate-100 border-slate-400 text-slate-800' : 'bg-white border-slate-200 text-slate-500',
+                      MEDIA: isActive ? 'bg-amber-100 border-amber-400 text-amber-800 font-extrabold' : 'bg-white border-slate-200 text-slate-500',
+                      ALTA: isActive ? 'bg-red-100 border-red-400 text-red-800 font-extrabold' : 'bg-white border-slate-200 text-slate-500',
+                    };
+                    return (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => setPriority(p)}
+                        className={`border rounded py-2 text-center text-xs font-bold transition-all cursor-pointer ${colors[p]}`}
+                      >
+                        {p === 'BAIXA' ? 'Baixa' : p === 'MEDIA' ? 'Média' : 'Alta'}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Título <span className="text-rose-500">*</span></label>
@@ -390,6 +472,15 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tipo</span>
                 <p className="text-sm font-bold text-slate-800 mt-0.5">{TIPO_SOLICITACAO_LABEL[solicitacaoType] || solicitacaoType}</p>
               </div>
+              {canEditPriority && (
+                <>
+                  <div className="h-px bg-slate-100" />
+                  <div>
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Prioridade</span>
+                    <p className="text-sm font-bold text-slate-800 mt-0.5">{priority}</p>
+                  </div>
+                </>
+              )}
               <div className="h-px bg-slate-100" />
               <div>
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Localização</span>
@@ -405,9 +496,9 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
             <Button variant="secondary" onClick={handleSubmit} disabled={isSubmitting}
               className="w-full bg-brand-blue hover:bg-brand-teal text-sm py-3 mt-2">
               {isSubmitting ? (
-                <span className="flex items-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Registrando...</span>
+                <span className="flex items-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />{isEditing ? 'Atualizando...' : 'Registrando...'}</span>
               ) : (
-                <span className="flex items-center gap-1.5"><CheckCircle className="w-5 h-5" /> Registrar Ocorrência</span>
+                <span className="flex items-center gap-1.5"><CheckCircle className="w-5 h-5" /> {isEditing ? 'Atualizar Ocorrência' : 'Registrar Ocorrência'}</span>
               )}
             </Button>
           </Card>

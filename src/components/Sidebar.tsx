@@ -31,7 +31,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'inventario', label: 'Inventário', icon: Package },
     { id: 'ocorrencias', label: 'Ocorrências', icon: AlertTriangle },
     { id: 'triagem', label: 'Triagem / Monitoramento', icon: Eye },
-    { id: 'lote', label: 'Lote / Cadastro', icon: ShieldAlert },
+    { id: 'aprovacao', label: 'Aprovação', icon: ShieldAlert },
+    { id: 'lote', label: 'Lote / Cadastro', icon: Settings },
   ];
 
   // Classe utilitária para resetar completamente qualquer borda/anel de foco indesejado no clique

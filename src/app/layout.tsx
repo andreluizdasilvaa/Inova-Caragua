@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-    title: "Next-Auth - Boilerplate",
-    description: "Boilerplate de autenticação com Next-Auth",
+    title: "Inova Caragua - Sistema de Gestão",
+    description: "Sistema de Gestão de Inventário e Ocorrências da Prefeitura de Caraguatatuba",
     icons: {
         icon: "/logo_ico.ico", 
     },

@@ -143,6 +143,47 @@ export const TriagemView: React.FC<TriagemViewProps> = ({
     });
   }, [occurrences, sortByRecent, sortByOldest, sortByUrgent, sortByHigh]);
 
+  // Pagination variables
+  const totalPages = pagination ? pagination.totalPages : 1;
+  const currentPage = pagination ? pagination.page : 1;
+
+  // Generate page numbers for pagination (max 5 visible pages)
+  const pageNumbers = useMemo(() => {
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    
+    const pages: (number | string)[] = [];
+    const maxVisible = 5;
+    
+    if (currentPage <= 3) {
+      // Show first pages
+      for (let i = 1; i <= maxVisible - 1; i++) {
+        pages.push(i);
+      }
+      pages.push('...');
+      pages.push(totalPages);
+    } else if (currentPage >= totalPages - 2) {
+      // Show last pages
+      pages.push(1);
+      pages.push('...');
+      for (let i = totalPages - (maxVisible - 2); i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Show middle pages
+      pages.push(1);
+      pages.push('...');
+      pages.push(currentPage - 1);
+      pages.push(currentPage);
+      pages.push(currentPage + 1);
+      pages.push('...');
+      pages.push(totalPages);
+    }
+    
+    return pages;
+  }, [totalPages, currentPage]);
+
   const handleAction = (newStatus: StatusOcorrencia) => {
     if (!currentOcc) return;
     

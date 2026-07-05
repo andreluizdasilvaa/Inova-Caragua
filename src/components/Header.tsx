@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, Bell, Mail, HelpCircle, Menu } from 'lucide-react';
 import { Session } from 'next-auth';
 
@@ -11,8 +11,33 @@ export const Header: React.FC<HeaderProps> = ({
   session,
   onMenuClick
 }) => {
+  const [isVisible, setIsVisible] = useState(true);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
+        // Scrolling down - hide header
+        setIsVisible(false);
+      } else if (currentScrollY < 50) {
+        // Near the top - show header
+        setIsVisible(true);
+      }
+      
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
   return (
-    <header className="h-14 bg-white border-b border-slate-200/80 fixed top-0 right-0 left-0 md:left-60 z-10 flex items-center justify-between px-5 transition-all duration-200">
+    <header className={`h-14 ${isVisible ? 'bg-white/95 backdrop-blur-sm' : 'bg-transparent'} border-b ${isVisible ? 'border-slate-200/80' : 'border-transparent'} fixed top-0 right-0 left-0 md:left-60 z-10 flex items-center justify-between px-5 transition-all duration-200 ${isVisible ? '' : '-translate-y-full'}`}>
       {/* Search Input Bar */}
       <div className="flex items-center">
         <button

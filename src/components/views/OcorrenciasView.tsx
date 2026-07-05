@@ -2,9 +2,17 @@
 
 import React, { useState, useMemo } from 'react';
 import { Occurrence, StatusOcorrencia, Prioridade, TipoSolicitacao } from '@/types';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, Button, PriorityBadge, StatusBadge, TIPO_SOLICITACAO_LABEL } from '@/components/UI';
 import { Search, Edit, SlidersHorizontal, Calendar, Clock, AlertTriangle, ArrowLeftRight, X } from 'lucide-react';
 import { formatDate, formatTime } from '@/lib/utils/timestamp';
+
+interface PaginationInfo {
+  page: number;
+  limit: number;
+  totalCount: number;
+  totalPages: number;
+}
 
 interface OcorrenciasViewProps {
   occurrences: Occurrence[];
@@ -159,9 +167,12 @@ export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
     setMotivoOcc(null);
   };
 
-  const goToPage = (page: number) => {
-    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
-  };
+  // Frontend pagination: slice the filtered occurrences for display
+  const paginatedOccurrences = useMemo(() => {
+    if (pagination) return displayOccurrences;
+    const startIndex = (currentPage - 1) * 10;
+    return displayOccurrences.slice(startIndex, startIndex + 10);
+  }, [displayOccurrences, currentPage, pagination]);
 
   return (
     <div className="space-y-5">

@@ -68,9 +68,11 @@ export const DetalhesView: React.FC<DetalhesViewProps> = ({
     }, 2500);
   };
 
-  const formatDate = (date: Date | null | undefined) => {
+  const formatDate = (date: Date | string | null | undefined) => {
     if (!date) return '—';
-    return date.toLocaleDateString('pt-BR');
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('pt-BR');
   };
 
   // Get asset history list

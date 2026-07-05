@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Occurrence, Asset, Prioridade, StatusOcorrencia, StatusItem, mockOccurrences, mockAssets, mockSchoolStats, CategoriaItem } from '@/mockData';
+import { Occurrence, Asset, Prioridade, StatusOcorrencia, StatusItem, CategoriaItem } from '@/mockData';
 import { Card } from '@/components/UI';
 import { 
   CheckCircle, 
@@ -47,22 +47,17 @@ const ASSET_STATUS_CONFIG: Record<StatusItem, { icon: React.ReactNode; color: st
 
 const CATEGORIA_CRITICA: CategoriaItem[] = ['INFORMATICA', 'CONECTIVIDADE', 'PREDIAL'];
 
-export const SchoolDashboardView: React.FC = () => {
-  const schools = useMemo(() => {
-    return [...new Set(mockSchoolStats.map(s => s.nomeInstituicao))];
-  }, []);
+interface SchoolDashboardViewProps {
+  occurrences: Occurrence[];
+  assets: Asset[];
+  schoolName: string;
+}
 
-  const [selectedSchoolName, setSelectedSchoolName] = useState(schools[0] || 'E.M. Machado de Assis');
-
-  const selectedSchool = useMemo(() => {
-    return mockSchoolStats.find(s => s.nomeInstituicao === selectedSchoolName);
-  }, [selectedSchoolName]);
-
-  // Filter occurrences by selected institution
-  const schoolOccurrences = useMemo(() => {
-    if (!selectedSchool) return [];
-    return mockOccurrences.filter(o => o.instituicaoId === selectedSchool.instituicaoId);
-  }, [selectedSchool]);
+export const SchoolDashboardView: React.FC<SchoolDashboardViewProps> = ({
+  occurrences: schoolOccurrences,
+  assets: schoolAssets,
+  schoolName
+}) => {
 
   const stats = useMemo(() => {
     const open = schoolOccurrences.filter(o => o.status === 'ABERTA' || o.status === 'AGUARDANDO_CORRECAO').length;
@@ -76,10 +71,10 @@ export const SchoolDashboardView: React.FC = () => {
   }, [schoolOccurrences]);
 
   const criticalAssets = useMemo(() => {
-    return mockAssets.filter(a => 
+    return schoolAssets.filter(a => 
       CATEGORIA_CRITICA.includes(a.categoria) && a.status !== 'BAIXADO'
     );
-  }, []);
+  }, [schoolAssets]);
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -126,7 +121,7 @@ export const SchoolDashboardView: React.FC = () => {
           <div className="py-2.5 px-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
               <FileText className="w-4 h-4 text-brand-blue" />
-              Problemas Recentes - {selectedSchoolName}
+              Problemas Recentes - {schoolName}
             </h3>
             <span className="text-xs font-mono font-bold text-slate-500 bg-slate-200 px-2 py-0.5 rounded">
               {recentProblems.length} no total

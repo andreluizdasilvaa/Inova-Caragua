@@ -24,7 +24,19 @@ export default function AdminDashboard() {
 
   // Global Interactive Databases kept in React State
   const [occurrences, setOccurrences] = useState<Occurrence[]>(mockOccurrences);
-  const [assets, setAssets] = useState<Asset[]>(mockAssets);
+  const [assets, setAssets] = useState<Asset[]>([]);
+
+  // Fetch real assets on mount
+  React.useEffect(() => {
+    fetch('/api/itens')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setAssets(data);
+        }
+      })
+      .catch(err => console.error('Error fetching items:', err));
+  }, []);
 
   // Active View Router
   const [currentView, setView] = useState<string>('dashboard');

@@ -44,7 +44,7 @@ export default function SchoolPage() {
   // Get the user's instituicaoId from session
   const instituicaoId = session?.user?.instituicaoId || null;
 
-  // Filter occurrences and assets by the user's institution only
+  // Fetch occurrences and assets by the user's institution only
   const schoolOccurrences = useMemo<Occurrence[]>(() => {
     if (!instituicaoId) return [];
     return mockOccurrences.filter(o => o.instituicaoId === instituicaoId);
@@ -57,9 +57,18 @@ export default function SchoolPage() {
     }
   }, [schoolOccurrences, schoolOccurrencesState.length]);
 
-  const schoolAssets = useMemo<Asset[]>(() => {
-    if (!instituicaoId) return [];
-    return mockAssets.filter(a => a.instituicaoId === instituicaoId);
+  const [schoolAssets, setSchoolAssets] = React.useState<Asset[]>([]);
+  
+  React.useEffect(() => {
+    if (!instituicaoId) return;
+    fetch(`/api/itens?instituicaoId=${instituicaoId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setSchoolAssets(data);
+        }
+      })
+      .catch(err => console.error('Error fetching school assets:', err));
   }, [instituicaoId]);
 
   // Find school info from mock data

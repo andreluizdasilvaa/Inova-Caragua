@@ -23,11 +23,20 @@ import {
 } from 'lucide-react';
 import { mockAssetHistory, mockSchoolStats } from '@/mockData';
 
+interface PaginationInfo {
+  page: number;
+  limit: number;
+  totalCount: number;
+  totalPages: number;
+}
+
 interface TriagemViewProps {
   occurrences: Occurrence[];
   selectedOccurrence: Occurrence | null;
   setSelectedOccurrence: (occ: Occurrence) => void;
   onUpdateOccurrence: (occ: Occurrence) => void;
+  pagination?: PaginationInfo;
+  onPageChange?: (page: number) => void;
 }
 
 const TIPO_LABEL: Record<TipoSolicitacao, string> = {
@@ -42,7 +51,9 @@ export const TriagemView: React.FC<TriagemViewProps> = ({
   occurrences,
   selectedOccurrence,
   setSelectedOccurrence,
-  onUpdateOccurrence
+  onUpdateOccurrence,
+  pagination,
+  onPageChange,
 }) => {
   // If nothing is selected, default to the first pending occurrence
   const currentOcc = selectedOccurrence || occurrences[0] || null;
@@ -60,6 +71,55 @@ export const TriagemView: React.FC<TriagemViewProps> = ({
       setTriageFeedback('');
     }
   }, [currentOcc]);
+
+  // Get pending occurrences (for display in the queue)
+  const pendingOccurrences = useMemo(() => {
+    return occurrences.filter(o => 
+      o.status === 'ABERTA' || o.status === 'AGUARDANDO_APROVACAO' || o.status === 'AGUARDANDO_CORRECAO'
+    );
+  }, [occurrences]);
+
+  // Use backend pagination if available, otherwise use frontend pagination
+  const displayOccurrences = pagination ? occurrences : pendingOccurrences;
+  const totalPages = pagination ? pagination.totalPages : Math.ceil(pendingOccurrences.length / 10);
+  const currentPage = pagination ? pagination.page : 1;
+
+  // Generate page numbers for pagination (max 5 visible pages)
+  const pageNumbers = useMemo(() => {
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    
+    const pages: (number | string)[] = [];
+    const maxVisible = 5;
+    
+    if (currentPage <= 3) {
+      // Show first pages
+      for (let i = 1; i <= maxVisible - 1; i++) {
+        pages.push(i);
+      }
+      pages.push('...');
+      pages.push(totalPages);
+    } else if (currentPage >= totalPages - 2) {
+      // Show last pages
+      pages.push(1);
+      pages.push('...');
+      for (let i = totalPages - (maxVisible - 2); i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Show middle pages
+      pages.push(1);
+      pages.push('...');
+      pages.push(currentPage - 1);
+      pages.push(currentPage);
+      pages.push(currentPage + 1);
+      pages.push('...');
+      pages.push(totalPages);
+    }
+    
+    return pages;
+  }, [totalPages, currentPage]);
 
   // Fetch school stats dynamically
   const schoolStats = useMemo<SchoolStats>(() => {
@@ -144,9 +204,7 @@ export const TriagemView: React.FC<TriagemViewProps> = ({
 
           {/* List queue items container */}
           <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-slate-50/50">
-            {occurrences
-              .filter(o => o.status === 'ABERTA' || o.status === 'AGUARDANDO_APROVACAO' || o.status === 'AGUARDANDO_CORRECAO')
-              .map((occ) => {
+            {displayOccurrences.map((occ) => {
               const isSelected = currentOcc?.id === occ.id;
               return (
                 <div
@@ -188,6 +246,56 @@ export const TriagemView: React.FC<TriagemViewProps> = ({
               );
             })}
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="border-t border-slate-200 bg-slate-50/80 px-3 py-2 flex items-center justify-between shrink-0">
+              <div className="text-xs font-medium text-slate-500">
+                Página {currentPage} de {totalPages}
+                {pagination && (
+                  <span className="ml-2">({pagination.totalCount} registros)</span>
+                )}
+              </div>
+              
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => onPageChange?.(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="flex items-center justify-center w-7 h-7 text-xs font-medium text-slate-600 hover:text-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                
+                {pageNumbers.map((page, index) => (
+                  typeof page === 'number' ? (
+                    <button
+                      key={page}
+                      onClick={() => onPageChange?.(page)}
+                      className={`w-7 h-7 text-xs font-medium rounded transition-all ${
+                        currentPage === page
+                          ? 'bg-brand-blue text-white'
+                          : 'text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ) : (
+                    <span key={`ellipsis-${index}`} className="w-7 h-7 text-xs font-medium text-slate-400 flex items-center justify-center">
+                      ...
+                    </span>
+                  )
+                ))}
+                
+                <button
+                  onClick={() => onPageChange?.(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="flex items-center justify-center w-7 h-7 text-xs font-medium text-slate-600 hover:text-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* RIGHT PANE: Detalhes da Triagem e Formulário (8 Cols) */}

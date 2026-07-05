@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
     title: "Next-Auth - Boilerplate",
     description: "Boilerplate de autenticação com Next-Auth",
+    icons: {
+        icon: "/logo_ico.ico", 
+    },
 };
 
 export default function RootLayout({

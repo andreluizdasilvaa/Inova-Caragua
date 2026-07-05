@@ -25,6 +25,12 @@ export default function AdminDashboard() {
   // Global Interactive Databases kept in React State
   const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    totalCount: 0,
+    totalPages: 0,
+  });
 
   // Fetch real assets and occurrences on mount
   React.useEffect(() => {
@@ -36,16 +42,24 @@ export default function AdminDashboard() {
         }
       })
       .catch(err => console.error('Error fetching items:', err));
+  }, []);
 
-    fetch('/api/ocorrencias')
+  // Fetch occurrences with pagination
+  const fetchOccurrences = React.useCallback((page: number = 1) => {
+    fetch(`/api/ocorrencias?page=${page}&limit=${pagination.limit}`)
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data)) {
-          setOccurrences(data);
+        if (data && Array.isArray(data.data)) {
+          setOccurrences(data.data);
+          setPagination(data.pagination);
         }
       })
       .catch(err => console.error('Error fetching occurrences:', err));
-  }, []);
+  }, [pagination.limit]);
+
+  React.useEffect(() => {
+    fetchOccurrences(1);
+  }, [fetchOccurrences]);
 
   // Active View Router
   const [currentView, setView] = useState<string>('dashboard');
@@ -139,16 +153,18 @@ export default function AdminDashboard() {
               />
             )}
 
-            {currentView === 'ocorrencias' && (
-              <OcorrenciasView
-                occurrences={occurrences}
-                setView={navigateToView}
-                setSelectedOccurrence={setSelectedOccurrence}
-                onUpdateOccurrence={handleUpdateOccurrence}
-                canEditOwn={true}
-                canEditPriority={true}
-              />
-            )}
+             {currentView === 'ocorrencias' && (
+               <OcorrenciasView
+                 occurrences={occurrences}
+                 setView={navigateToView}
+                 setSelectedOccurrence={setSelectedOccurrence}
+                 onUpdateOccurrence={handleUpdateOccurrence}
+                 canEditOwn={true}
+                 canEditPriority={true}
+                 pagination={pagination}
+                 onPageChange={fetchOccurrences}
+               />
+             )}
 
             {currentView === 'triagem' && (
               <TriagemView
@@ -156,6 +172,8 @@ export default function AdminDashboard() {
                 selectedOccurrence={selectedOccurrence}
                 setSelectedOccurrence={setSelectedOccurrence}
                 onUpdateOccurrence={handleUpdateOccurrence}
+                pagination={pagination}
+                onPageChange={fetchOccurrences}
               />
             )}
 

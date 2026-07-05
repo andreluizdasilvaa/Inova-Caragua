@@ -5,8 +5,14 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const instituicaoId = searchParams.get('instituicaoId');
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const limit = parseInt(searchParams.get('limit') || '10', 10);
+    const skip = (page - 1) * limit;
 
     const where = instituicaoId ? { instituicaoId } : {};
+
+    // Get total count for pagination
+    const totalCount = await prisma.ocorrencia.count({ where });
 
     const ocorrencias = await prisma.ocorrencia.findMany({
       where,
@@ -18,7 +24,9 @@ export async function GET(request: Request) {
       },
       orderBy: {
         createdAt: 'desc',
-      }
+      },
+      skip,
+      take: limit,
     });
 
     // Format to match the Occurrence interface expected by the frontend
@@ -59,7 +67,15 @@ export async function GET(request: Request) {
       nomeCriador: occ.criadoPor.nome,
     }));
 
-    return NextResponse.json(formattedOccurrences);
+    return NextResponse.json({
+      data: formattedOccurrences,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+      },
+    });
   } catch (error) {
     console.error('Error fetching ocorrencias:', error);
     return NextResponse.json(

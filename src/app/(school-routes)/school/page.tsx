@@ -33,7 +33,7 @@ export default function SchoolPage() {
 
   // Local state for occurrences (to allow priority editing)
   const [schoolOccurrencesState, setSchoolOccurrences] = useState<Occurrence[]>([]);
-  
+
   // Selected detail items
   const [selectedOccurrence, setSelectedOccurrence] = useState<Occurrence | null>(null);
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
@@ -67,7 +67,7 @@ export default function SchoolPage() {
   }, [instituicaoId]);
 
   const [schoolAssets, setSchoolAssets] = React.useState<Asset[]>([]);
-  
+
   React.useEffect(() => {
     if (!instituicaoId) return;
     fetch(`/api/itens?instituicaoId=${instituicaoId}`)
@@ -120,7 +120,7 @@ export default function SchoolPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
-      
+
       {/* Sidebar - Fixed size with responsive toggling */}
       <div className={`md:block ${sidebarOpen ? 'block' : 'hidden'}`}>
         <SchoolSidebar
@@ -136,7 +136,7 @@ export default function SchoolPage() {
 
       {/* Main layout container offsetting the fixed sidebar (left-60) */}
       <div className="md:pl-60 min-h-screen flex flex-col">
-        
+
         {/* Top Navbar */}
         <Header
           session={session}

@@ -246,3 +246,29 @@ Essas variáveis são usadas pelo fluxo de recuperação de senha para envio de 
 - [Documentação Prisma](https://www.prisma.io/docs)
 - [Documentação Tailwind CSS](https://tailwindcss.com/docs)
 - [PostgreSQL Documentation](https://www.postgresql.org/docs)
+
+# Utilize essas credenciais de acesso para utilizar o sistema em produção
+
+https://inova-caragua.vercel.app/
+
+Conta admin:
+
+Email: admin@admin.com
+
+Senha: admin
+
+---
+
+Conta escola:
+
+Email: escola@escola.com
+
+Senha: escola
+
+---
+
+Conta triagem:
+
+Email: triagem@triagem.com
+
+Senha: triagem

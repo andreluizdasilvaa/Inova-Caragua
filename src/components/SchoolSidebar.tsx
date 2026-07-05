@@ -68,15 +68,6 @@ export const SchoolSidebar: React.FC<SchoolSidebarProps> = ({
           );
         })}
 
-        <div className="pt-4">
-          <p className="px-2 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Apoio</p>
-          <button 
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all text-left cursor-pointer border border-transparent ${focusReset}`}
-          >
-            <Settings className="w-4 h-4 text-slate-500" />
-            <span>Configurações</span>
-          </button>
-        </div>
       </nav>
 
       {/* User Session Footer Card */}
@@ -86,7 +77,10 @@ export const SchoolSidebar: React.FC<SchoolSidebarProps> = ({
             {session?.user?.name ? session.user.name.substring(0, 2) : 'US'}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-white truncate leading-none">{session?.user?.name ?? 'Usuário'}</p>
+            <p className="text-sm font-bold text-white truncate leading-none flex items-center gap-1.5">
+              {session?.user?.name ?? 'Usuário'}
+              <Settings className="w-4 h-4 text-slate-500" />
+            </p>
             <p className="text-xs text-slate-500 truncate mt-0.5">{session?.user?.email ?? ''}</p>
           </div>
         </div>

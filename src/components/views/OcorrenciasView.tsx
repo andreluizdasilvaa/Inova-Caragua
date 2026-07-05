@@ -13,6 +13,8 @@ interface OcorrenciasViewProps {
   onUpdateOccurrence?: (occ: Occurrence) => void;
   canEditOwn?: boolean;
   canEditPriority?: boolean;
+  pagination?: PaginationInfo;
+  onPageChange?: (page: number) => void;
 }
 
 export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
@@ -21,7 +23,9 @@ export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
   setSelectedOccurrence,
   onUpdateOccurrence,
   canEditOwn = false,
-  canEditPriority = false
+  canEditPriority = false,
+  pagination,
+  onPageChange,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPriority, setSelectedPriority] = useState<string>('Todas');
@@ -85,18 +89,47 @@ export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
 
   const canEdit = canEditOwn || canEditPriority;
 
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  // Use backend pagination if available, otherwise use frontend pagination
+  const displayOccurrences = pagination ? occurrences : filteredOccurrences;
+  const totalPages = pagination ? pagination.totalPages : Math.ceil(filteredOccurrences.length / 10);
+  const currentPage = pagination ? pagination.page : 1;
 
-  const totalPages = Math.ceil(filteredOccurrences.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedOccurrences = filteredOccurrences.slice(startIndex, startIndex + itemsPerPage);
-
-  // Reset page when filters or items per page change
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, selectedPriority, selectedStatus, selectedTipo, itemsPerPage]);
+  // Generate page numbers for pagination (max 5 visible pages)
+  const pageNumbers = useMemo(() => {
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    
+    const pages: (number | string)[] = [];
+    const maxVisible = 5;
+    
+    if (currentPage <= 3) {
+      // Show first pages
+      for (let i = 1; i <= maxVisible - 1; i++) {
+        pages.push(i);
+      }
+      pages.push('...');
+      pages.push(totalPages);
+    } else if (currentPage >= totalPages - 2) {
+      // Show last pages
+      pages.push(1);
+      pages.push('...');
+      for (let i = totalPages - (maxVisible - 2); i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Show middle pages
+      pages.push(1);
+      pages.push('...');
+      pages.push(currentPage - 1);
+      pages.push(currentPage);
+      pages.push(currentPage + 1);
+      pages.push('...');
+      pages.push(totalPages);
+    }
+    
+    return pages;
+  }, [totalPages, currentPage]);
 
   const [showMotivoModal, setShowMotivoModal] = useState<string | null>(null);
   const [motivoOcc, setMotivoOcc] = useState<Occurrence | null>(null);
@@ -368,65 +401,55 @@ export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
           </table>
         </div>
 
-        <div className="bg-slate-50 border-t border-slate-200 px-4 py-3 flex items-center justify-between text-xs font-bold text-slate-500">
-          <div className="flex items-center gap-3">
-            <span>
-              Mostrando {filteredOccurrences.length > 0 ? startIndex + 1 : 0} a {Math.min(startIndex + itemsPerPage, filteredOccurrences.length)} de {filteredOccurrences.length} entradas
-            </span>
-            <select
-              value={itemsPerPage}
-              onChange={(e) => setItemsPerPage(Number(e.target.value))}
-              className="text-xs border border-slate-200 rounded px-2 py-1 bg-white font-semibold text-slate-700 outline-none focus:ring-1 focus:ring-brand-blue"
-            >
-              <option value="10">10 por página</option>
-              <option value="20">20 por página</option>
-            </select>
-          </div>
-          <div className="flex gap-1">
-            <button
-              onClick={() => goToPage(currentPage - 1)}
-              disabled={currentPage === 1}
-              className="px-3 py-1.5 rounded border border-slate-200 bg-white hover:bg-slate-50 transition-colors disabled:opacity-40"
-            >
-              Anterior
-            </button>
+        {/* Pagination Controls - only show if more than 1 page */}
+        {totalPages > 1 && (
+          <div className="bg-slate-50 border-t border-slate-200 px-3 py-2 flex items-center justify-between shrink-0">
+            <div className="text-xs font-medium text-slate-500">
+              Página {currentPage} de {totalPages}
+              {pagination && (
+                <span className="ml-2">({pagination.totalCount} registros)</span>
+              )}
+            </div>
             
-            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-              let pageNum: number;
-              if (totalPages <= 5) {
-                pageNum = i + 1;
-              } else if (currentPage <= 3) {
-                pageNum = i + 1;
-              } else if (currentPage >= totalPages - 2) {
-                pageNum = totalPages - 4 + i;
-              } else {
-                pageNum = currentPage - 2 + i;
-              }
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => onPageChange?.(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="flex items-center justify-center w-7 h-7 text-xs font-medium text-slate-600 hover:text-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
               
-              return (
-                <button
-                  key={pageNum}
-                  onClick={() => goToPage(pageNum)}
-                  className={`px-3 py-1.5 rounded border transition-colors ${
-                    currentPage === pageNum
-                      ? 'border-brand-blue bg-brand-blue text-white font-bold'
-                      : 'border-slate-200 bg-white hover:bg-slate-50'
-                  }`}
-                >
-                  {pageNum}
-                </button>
-              );
-            })}
-            
-            <button
-              onClick={() => goToPage(currentPage + 1)}
-              disabled={currentPage === totalPages || totalPages === 0}
-              className="px-3 py-1.5 rounded border border-slate-200 bg-white hover:bg-slate-50 transition-colors disabled:opacity-40"
-            >
-              Próximo
-            </button>
+              {pageNumbers.map((page, index) => (
+                typeof page === 'number' ? (
+                  <button
+                    key={page}
+                    onClick={() => onPageChange?.(page)}
+                    className={`w-7 h-7 text-xs font-medium rounded transition-all ${
+                      currentPage === page
+                        ? 'bg-brand-blue text-white'
+                        : 'text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ) : (
+                  <span key={`ellipsis-${index}`} className="w-7 h-7 text-xs font-medium text-slate-400 flex items-center justify-center">
+                    ...
+                  </span>
+                )
+              ))}
+              
+              <button
+                onClick={() => onPageChange?.(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="flex items-center justify-center w-7 h-7 text-xs font-medium text-slate-600 hover:text-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </Card>
     </div>
   );

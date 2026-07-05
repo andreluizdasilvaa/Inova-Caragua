@@ -26,11 +26,20 @@ import {
   ArrowDown
 } from 'lucide-react';
 
+interface PaginationInfo {
+  page: number;
+  limit: number;
+  totalCount: number;
+  totalPages: number;
+}
+
 interface TriagemViewProps {
   occurrences: Occurrence[];
   selectedOccurrence: Occurrence | null;
   setSelectedOccurrence: (occ: Occurrence) => void;
   onUpdateOccurrence: (occ: Occurrence) => void;
+  pagination?: PaginationInfo;
+  onPageChange?: (page: number) => void;
 }
 
 const TIPO_LABEL: Record<TipoSolicitacao, string> = {
@@ -45,7 +54,9 @@ export const TriagemView: React.FC<TriagemViewProps> = ({
   occurrences,
   selectedOccurrence,
   setSelectedOccurrence,
-  onUpdateOccurrence
+  onUpdateOccurrence,
+  pagination,
+  onPageChange,
 }) => {
   const currentOcc = selectedOccurrence || occurrences[0] || null;
 
@@ -227,6 +238,56 @@ export const TriagemView: React.FC<TriagemViewProps> = ({
               <div className="text-center py-8 text-slate-400 text-sm">Nenhuma ocorrência pendente encontrada.</div>
             )}
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="border-t border-slate-200 bg-slate-50/80 px-3 py-2 flex items-center justify-between shrink-0">
+              <div className="text-xs font-medium text-slate-500">
+                Página {currentPage} de {totalPages}
+                {pagination && (
+                  <span className="ml-2">({pagination.totalCount} registros)</span>
+                )}
+              </div>
+              
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => onPageChange?.(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="flex items-center justify-center w-7 h-7 text-xs font-medium text-slate-600 hover:text-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                
+                {pageNumbers.map((page, index) => (
+                  typeof page === 'number' ? (
+                    <button
+                      key={page}
+                      onClick={() => onPageChange?.(page)}
+                      className={`w-7 h-7 text-xs font-medium rounded transition-all ${
+                        currentPage === page
+                          ? 'bg-brand-blue text-white'
+                          : 'text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ) : (
+                    <span key={`ellipsis-${index}`} className="w-7 h-7 text-xs font-medium text-slate-400 flex items-center justify-center">
+                      ...
+                    </span>
+                  )
+                ))}
+                
+                <button
+                  onClick={() => onPageChange?.(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="flex items-center justify-center w-7 h-7 text-xs font-medium text-slate-600 hover:text-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="lg:col-span-8 flex flex-col h-full gap-4 overflow-y-auto pr-1">

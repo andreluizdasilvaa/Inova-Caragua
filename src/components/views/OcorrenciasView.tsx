@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Occurrence, StatusOcorrencia, Prioridade, TipoSolicitacao } from '@/types';
+import { Occurrence, StatusOcorrencia, Prioridade, TipoSolicitacao, PaginationInfo } from '@/types';
 import { Card, Button, PriorityBadge, StatusBadge, TIPO_SOLICITACAO_LABEL } from '@/components/UI';
-import { Search, Edit, SlidersHorizontal, Calendar, Clock, AlertTriangle, ArrowLeftRight, X } from 'lucide-react';
+import { Search, Edit, SlidersHorizontal, Calendar, Clock, AlertTriangle, ArrowLeftRight, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatDate, formatTime } from '@/lib/utils/timestamp';
 
 interface OcorrenciasViewProps {
@@ -159,9 +159,7 @@ export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
     setMotivoOcc(null);
   };
 
-  const goToPage = (page: number) => {
-    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
-  };
+
 
   return (
     <div className="space-y-5">
@@ -314,8 +312,8 @@ export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm font-semibold text-slate-600">
-              {paginatedOccurrences.length > 0 ? (
-                paginatedOccurrences.map((occ) => {
+              {displayOccurrences.length > 0 ? (
+                displayOccurrences.map((occ) => {
                   const isAguardandoCorrecao = occ.status === 'AGUARDANDO_CORRECAO';
                   return (
                   <tr 

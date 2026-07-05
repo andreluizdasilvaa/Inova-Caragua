@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Occurrence, SchoolStats, Prioridade, StatusOcorrencia, TipoSolicitacao, OccurrenceHistory } from '@/types';
+import { Occurrence, SchoolStats, Prioridade, StatusOcorrencia, TipoSolicitacao, OccurrenceHistory, PaginationInfo } from '@/types';
 import { Card, Button, PriorityBadge, StatusBadge, STATUS_OCORRENCIA_LABEL } from '@/components/UI';
 import { api } from '@/lib/api';
 import { formatDate } from '@/lib/utils/timestamp';
@@ -26,12 +26,7 @@ import {
   ArrowDown
 } from 'lucide-react';
 
-interface PaginationInfo {
-  page: number;
-  limit: number;
-  totalCount: number;
-  totalPages: number;
-}
+
 
 interface TriagemViewProps {
   occurrences: Occurrence[];
@@ -142,6 +137,42 @@ export const TriagemView: React.FC<TriagemViewProps> = ({
       return 0;
     });
   }, [occurrences, sortByRecent, sortByOldest, sortByUrgent, sortByHigh]);
+
+  const totalPages = pagination ? pagination.totalPages : Math.ceil(sortedOccurrences.length / 10);
+  const currentPage = pagination ? pagination.page : 1;
+
+  const pageNumbers = useMemo(() => {
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    
+    const pages: (number | string)[] = [];
+    const maxVisible = 5;
+    
+    if (currentPage <= 3) {
+      for (let i = 1; i <= maxVisible - 1; i++) {
+        pages.push(i);
+      }
+      pages.push('...');
+      pages.push(totalPages);
+    } else if (currentPage >= totalPages - 2) {
+      pages.push(1);
+      pages.push('...');
+      for (let i = totalPages - (maxVisible - 2); i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      pages.push(1);
+      pages.push('...');
+      pages.push(currentPage - 1);
+      pages.push(currentPage);
+      pages.push(currentPage + 1);
+      pages.push('...');
+      pages.push(totalPages);
+    }
+    
+    return pages;
+  }, [totalPages, currentPage]);
 
   const handleAction = (newStatus: StatusOcorrencia) => {
     if (!currentOcc) return;

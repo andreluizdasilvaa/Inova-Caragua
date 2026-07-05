@@ -13,7 +13,7 @@ export default function ForgotPasswordPage() {
                 <ForgotPasswordForm />
 
                 <p className="text-center text-sm text-gray-500 mt-6">
-                    Lembrou da senha? <Link href="/login" className="text-indigo-600 hover:text-indigo-700 font-medium">Voltar para login</Link>
+                    Lembrou da senha? <Link href="/" className="text-indigo-600 hover:text-indigo-700 font-medium">Voltar para login</Link>
                 </p>
             </div>
         </main>

@@ -7,9 +7,6 @@ interface PrivateLayoutProps {
     children: ReactNode;
 }
 
-/**
- * Papéis que podem acessar as rotas /school
- */
 const allowedRoles = ["ESCOLA"];
 
 // Quem não tem uma sessão ativa vai ser redirecionado para page de login
@@ -18,12 +15,12 @@ export default async function SchoolLayout({ children }: PrivateLayoutProps) {
 
     // 2º camada de proteção: sem sessão → login
     if (!session) {
-        redirect('/login')
+        redirect('/')
     }
 
     // 3º camada de proteção: papel não autorizado → login
     if (!allowedRoles.includes(session.user.papel)) {
-        redirect('/login')
+        redirect('/')
     }
 
     return (

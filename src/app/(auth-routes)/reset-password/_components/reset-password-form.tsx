@@ -24,7 +24,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
     useEffect(() => {
         if (state.status === "success") {
             redirectTimeoutRef.current = window.setTimeout(() => {
-                router.replace("/login")
+                router.replace("/")
             }, 2000)
         }
 

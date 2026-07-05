@@ -7,19 +7,19 @@ interface PrivateLayoutProps {
     children: ReactNode;
 }
 
-const allowedRoles = ["MESTRE", "TRIAGEM"];
+const allowedRoles = ["TRIAGEM"];
 
-export default async function PrivateLayout({ children }: PrivateLayoutProps) {
+export default async function TriageLayout({ children }: PrivateLayoutProps) {
     const session = await getServerSession(nextAuthOptions)
 
     // 2º camada de proteção: sem sessão → login
     if (!session) {
-        redirect('/login')
+        redirect('/')
     }
 
     // 3º camada de proteção: papel não autorizado → login
     if (!allowedRoles.includes(session.user.papel)) {
-        redirect('/login')
+        redirect('/')
     }
 
     return (

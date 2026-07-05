@@ -10,6 +10,8 @@ import {
   LogOut,
   ShieldAlert
 } from 'lucide-react';
+import Logo from '@/assets/logo_inova.png'
+import Image from 'next/image';
 
 interface SidebarProps {
   currentView: string;
@@ -32,19 +34,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'lote', label: 'Lote / Cadastro', icon: ShieldAlert },
   ];
 
+  // Classe utilitária para resetar completamente qualquer borda/anel de foco indesejado no clique
+  const focusReset = "outline-none focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:outline-none";
+
   return (
     <aside className="w-60 bg-slate-900 border-r border-slate-800 text-slate-100 flex flex-col h-screen fixed left-0 top-0 z-20 shrink-0 font-sans">
       {/* Brand Header */}
       <div className="p-4 border-b border-slate-800">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-sm">
-            <School className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="font-extrabold text-base leading-none tracking-tight text-white">InovaCaragua</h1>
-            <p className="font-mono text-xs text-slate-400 uppercase tracking-widest font-semibold mt-1">Manutenção Escolar</p>
-          </div>
-        </div>
+        <Image 
+          src={Logo}
+          alt='Logo Inova Caragua - Administração'
+        />
       </div>
 
       {/* Main Navigation links */}
@@ -59,10 +59,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               key={item.id}
               onClick={() => setView(item.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all duration-150 text-left cursor-pointer ${
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold transition-all duration-150 text-left cursor-pointer ${focusReset} ${
                 isActive 
                   ? 'bg-slate-800 text-white shadow-sm border border-slate-700/40' 
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent'
               }`}
             >
               <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-500'}`} />
@@ -74,8 +74,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="pt-4">
           <p className="px-2 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Apoio</p>
           <button 
-            onClick={() => alert('Configurações de sistema simuladas.')}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all text-left cursor-pointer"
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all text-left cursor-pointer border border-transparent ${focusReset}`}
           >
             <Settings className="w-4 h-4 text-slate-500" />
             <span>Configurações</span>
@@ -97,7 +96,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         
         <button
           onClick={onLogout}
-          className="mt-3 w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded border border-slate-800 hover:border-rose-500/55 hover:bg-rose-500/5 text-slate-400 hover:text-rose-400 transition-all duration-150 cursor-pointer"
+          className={`mt-3 w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded border border-slate-800 hover:border-rose-500/55 hover:bg-rose-500/5 text-slate-400 hover:text-rose-400 transition-all duration-150 cursor-pointer ${focusReset}`}
         >
           <LogOut className="w-4 h-4" />
           <span>Sair da Sessão</span>

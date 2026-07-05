@@ -89,24 +89,10 @@ export const SchoolDashboardView: React.FC = () => {
     <div className="space-y-5">
       {/* School Selector & Stats Cards */}
       <div className="flex flex-col md:flex-row gap-4">
-        <Card className="p-4 md:w-72 shrink-0">
-          <div className="flex items-center gap-2 mb-3">
-            <School className="w-4 h-4 text-brand-blue" />
-            <h3 className="text-sm font-bold text-slate-800">Unidade Escolar</h3>
-          </div>
-          <select value={selectedSchoolName} onChange={(e) => setSelectedSchoolName(e.target.value)}
-            className="w-full text-sm rounded border border-slate-200 bg-white py-2 px-2 outline-none focus:ring-1 focus:ring-brand-blue transition-all font-semibold text-slate-700">
-            {schools.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-          <div className="mt-3 pt-3 border-t border-slate-100">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Escola Selecionada</p>
-            <p className="text-sm font-extrabold text-slate-900 mt-0.5">{selectedSchoolName}</p>
-          </div>
-        </Card>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
           <Card className="p-4 flex items-center gap-3 border-rose-200">
-            <div className="w-10 h-10 bg-rose-50 rounded-full flex items-center justify-center shrink-0 border border-rose-150">
+            <div className="w-10 h-10 bg-rose-50 rounded-full flex items-center justify-center shrink-0">
               <FileText className="w-5 h-5 text-rose-600" />
             </div>
             <div>
@@ -115,7 +101,7 @@ export const SchoolDashboardView: React.FC = () => {
             </div>
           </Card>
           <Card className="p-4 flex items-center gap-3 border-amber-200">
-            <div className="w-10 h-10 bg-amber-50 rounded-full flex items-center justify-center shrink-0 border border-amber-150">
+            <div className="w-10 h-10 bg-amber-50 rounded-full flex items-center justify-center shrink-0">
               <Wrench className="w-5 h-5 text-amber-600" />
             </div>
             <div>
@@ -124,7 +110,7 @@ export const SchoolDashboardView: React.FC = () => {
             </div>
           </Card>
           <Card className="p-4 flex items-center gap-3 border-teal-200">
-            <div className="w-10 h-10 bg-teal-50 rounded-full flex items-center justify-center shrink-0 border border-teal-150">
+            <div className="w-10 h-10 bg-teal-50 rounded-full flex items-center justify-center shrink-0">
               <CheckCircle className="w-5 h-5 text-teal-600" />
             </div>
             <div>

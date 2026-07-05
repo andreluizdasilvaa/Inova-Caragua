@@ -38,7 +38,7 @@ export default function Register() {
             return
         }
         
-        router.push('/login')
+        router.push('/')
     }
     
     return (

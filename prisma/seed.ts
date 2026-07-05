@@ -1,31 +1,7 @@
-/**
- * Seed de Instituições - Caraguatatuba
- *
- * Fonte: "Lista escolas.xlsx"
- * Colunas usadas: NOME OFICIAL, BAIRRO, ENDEREÇO, EMAIL, TELEFONE, LATITUDE, LONGITUDE
- *
- * Mapeamento de TipoInstituicao (enum do schema.prisma):
- *   CRECHE  → prefixo "CRECHE"
- *   EMEI    → prefixo "EMEI" puro (sem EMEF)
- *   EMEF    → prefixo "EMEF" puro (sem EMEI) e "CEFI"
- *   EMEIF   → "EMEI/EMEF" e "CIEFI" (combinados / inclusão)
- *   OUTRO   → demais (CEI, CRIES, BIBLIOTECA, etc.)
- *
- * ⚠️  ATENÇÃO — o que você pode precisar ajustar:
- *   1. Se o enum TipoInstituicao mudar no schema.prisma, revise a função mapTipo() abaixo.
- *   2. As coordenadas do Excel estão em graus decimais × 1.000.000 (inteiros).
- *      O seed já divide por 1e6 para converter para Float. Se o formato mudar, ajuste toCoord().
- *   3. O upsert usa o campo "nome" como identificador. Se houver código INEP disponível,
- *      troque o where: { nome } por where: { codigoInep } para maior robustez.
- */
-
-import 'dotenv/config' // carrega o .env antes de qualquer outro import
+import 'dotenv/config'
 import { TipoInstituicao } from '../src/generated/client'
 import prisma from '../src/lib/prisma'
 
-// ---------------------------------------------------------------------------
-// Dados extraídos da planilha "Lista escolas.xlsx"
-// ---------------------------------------------------------------------------
 const escolas: {
     nome: string
     bairro: string | null
@@ -109,10 +85,7 @@ const escolas: {
         { nome: 'BIBLIOTECA CECILIA MEIRELES', bairro: 'Travessão', endereco: 'Rua Joao Carlos Balio, 240', email: 'biblioteca.municipal@caraguatatuba.sp.gov.br', telefone: '3882-1217', lat: -23699000, lon: -45447500 },
     ]
 
-// ---------------------------------------------------------------------------
-// ⚠️  Mapeamento de tipo
-// Se o enum TipoInstituicao for modificado no schema.prisma, atualize esta função.
-// ---------------------------------------------------------------------------
+
 function mapTipo(nome: string): TipoInstituicao {
     const n = nome.toUpperCase()
     if (n.startsWith('CRECHE')) return TipoInstituicao.CRECHE
@@ -122,11 +95,6 @@ function mapTipo(nome: string): TipoInstituicao {
     return TipoInstituicao.OUTRO
 }
 
-// ---------------------------------------------------------------------------
-// ⚠️  Conversão de coordenadas
-// O Excel armazena graus decimais × 1.000.000 como inteiros (ex: -23618520).
-// Se a planilha já estiver em Float, remova a divisão por 1_000_000.
-// ---------------------------------------------------------------------------
 function toCoord(raw: number | null): number | null {
     if (raw === null) return null
     return raw / 1_000_000
@@ -135,9 +103,6 @@ function toCoord(raw: number | null): number | null {
 async function main() {
     console.log('Iniciando seed de instituicoes...')
 
-    // upsert nao funciona com "nome" pois nao e campo @unique no schema.
-    // Usamos findFirst + update/create como alternativa segura.
-    // ⚠️  Quando o codigo INEP estiver disponivel, substitua por upsert com where: { codigoInep }
     for (const escola of escolas) {
         const dados = {
             bairro: escola.bairro,

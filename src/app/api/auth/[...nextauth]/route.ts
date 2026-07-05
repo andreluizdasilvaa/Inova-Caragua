@@ -34,7 +34,7 @@ const nextAuthOptions: NextAuthOptions = {
     ],
     // Onde fica a pagina de LOGIN
     pages: {
-        signIn: "/login"
+        signIn: "/"
     },
     session: {
         strategy: "jwt",

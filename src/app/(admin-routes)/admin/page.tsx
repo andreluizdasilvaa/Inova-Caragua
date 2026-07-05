@@ -23,7 +23,7 @@ export default function AdminDashboard() {
 
   // Active View Router
   const [currentView, setView] = useState<string>('dashboard');
-  
+
   // Selected detail items
   const [selectedOccurrence, setSelectedOccurrence] = useState<Occurrence | null>(mockOccurrences[0]);
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(mockAssets[0]);
@@ -34,7 +34,7 @@ export default function AdminDashboard() {
   // Handlers
   const handleUpdateOccurrence = (updated: Occurrence) => {
     setOccurrences((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
-    
+
     // Also update selectedOccurrence state to sync right panel
     if (selectedOccurrence?.id === updated.id) {
       setSelectedOccurrence(updated);
@@ -50,32 +50,31 @@ export default function AdminDashboard() {
   };
 
   const handleLogout = () => {
-    signOut({ callbackUrl: '/login' });
+    signOut({ callbackUrl: '/' });
   };
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
-      
+
       {/* Sidebar - Fixed size with responsive toggling */}
       <div className={`md:block ${sidebarOpen ? 'block' : 'hidden'}`}>
-        <Sidebar 
-          currentView={currentView} 
+        <Sidebar
+          currentView={currentView}
           setView={(view) => {
             setView(view);
             setSidebarOpen(false);
-          }} 
-          session={session} 
-          onLogout={handleLogout} 
+          }}
+          session={session}
+          onLogout={handleLogout}
         />
       </div>
 
       {/* Main layout container offsetting the fixed sidebar (left-60) */}
       <div className="md:pl-60 min-h-screen flex flex-col">
-        
+
         {/* Top Navbar */}
-        <Header 
-          session={session} 
-          title="Central de Controle" 
+        <Header
+          session={session}
           onMenuClick={() => setSidebarOpen(!sidebarOpen)}
         />
 
@@ -83,25 +82,25 @@ export default function AdminDashboard() {
         <main className="flex-1 p-4 mt-12 overflow-y-auto">
           <div className="max-w-7xl mx-auto">
             {currentView === 'dashboard' && (
-              <DashboardView 
-                occurrences={occurrences} 
-                assets={assets} 
+              <DashboardView
+                occurrences={occurrences}
+                assets={assets}
                 setView={setView}
                 setSelectedOccurrence={setSelectedOccurrence}
               />
             )}
-            
+
             {currentView === 'ocorrencias' && (
-              <OcorrenciasView 
-                occurrences={occurrences} 
-                setView={setView} 
-                setSelectedOccurrence={setSelectedOccurrence} 
+              <OcorrenciasView
+                occurrences={occurrences}
+                setView={setView}
+                setSelectedOccurrence={setSelectedOccurrence}
               />
             )}
 
             {currentView === 'triagem' && (
-              <TriagemView 
-                occurrences={occurrences} 
+              <TriagemView
+                occurrences={occurrences}
                 selectedOccurrence={selectedOccurrence}
                 setSelectedOccurrence={setSelectedOccurrence}
                 onUpdateOccurrence={handleUpdateOccurrence}
@@ -109,30 +108,30 @@ export default function AdminDashboard() {
             )}
 
             {currentView === 'inventario' && (
-              <InventarioView 
-                assets={assets} 
-                setView={setView} 
-                setSelectedAsset={setSelectedAsset} 
+              <InventarioView
+                assets={assets}
+                setView={setView}
+                setSelectedAsset={setSelectedAsset}
               />
             )}
 
             {currentView === 'lote' && (
-              <LoteView 
-                assets={assets} 
-                setView={setView} 
-                onGenerateBatch={handleGenerateBatch} 
+              <LoteView
+                assets={assets}
+                setView={setView}
+                onGenerateBatch={handleGenerateBatch}
               />
             )}
 
             {currentView === 'detalhes' && (
-              <DetalhesView 
-                asset={selectedAsset} 
-                setView={setView} 
+              <DetalhesView
+                asset={selectedAsset}
+                setView={setView}
               />
             )}
 
             {currentView === 'nova-ocorrencia' && (
-              <NovaOcorrenciaView 
+              <NovaOcorrenciaView
                 assets={assets}
                 occurrences={occurrences}
                 setView={setView}

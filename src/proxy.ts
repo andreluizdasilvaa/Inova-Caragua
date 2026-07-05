@@ -61,7 +61,7 @@ function middleware(req: NextRequestWithAuth) {
             console.warn(
                 `❌ Acesso negado: ${token?.email} (papel: ${userRole}) tentou acessar ${path}`
             )
-            return NextResponse.redirect(new URL("/login", req.url))
+            return NextResponse.redirect(new URL("/", req.url))
         }
     }
 
@@ -76,7 +76,7 @@ export default withAuth(middleware, {
         },
     },
     pages: {
-        signIn: "/login",
+        signIn: "/",
     },
 })
 

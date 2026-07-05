@@ -117,7 +117,7 @@ export const DetalhesView: React.FC<DetalhesViewProps> = ({
             className="text-slate-700 border-slate-300 hover:bg-slate-50 flex items-center gap-1 text-xs py-2 px-3">
             <Download className="w-4 h-4" /><span>Exportar PDF</span>
           </Button>
-          <Button variant="secondary" onClick={() => triggerToast('Edição de metadados iniciada!')}
+          <Button variant="secondary" onClick={() => setView('novo-ativo')}
             className="bg-slate-800 hover:bg-slate-900 flex items-center gap-1 text-xs py-2 px-3">
             <PenTool className="w-4 h-4" /><span>Editar Ativo</span>
           </Button>

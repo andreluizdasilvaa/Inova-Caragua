@@ -10,6 +10,7 @@ import { OcorrenciasView } from '@/components/views/OcorrenciasView';
 import { LoteView } from '@/components/views/LoteView';
 import { DetalhesView } from '@/components/views/DetalhesView';
 import { NovaOcorrenciaView } from '@/components/views/NovaOcorrenciaView';
+import { NovoAtivoView } from '@/components/views/NovoAtivoView';
 import { signOut, useSession } from 'next-auth/react';
 
 function LoadingSpinner() {
@@ -72,6 +73,10 @@ export default function SchoolPage() {
   };
 
   const handleRegisterOccurrence = (occurrence: Occurrence) => {
+    // In a real app, this would be saved to the DB
+  };
+
+  const handleRegisterAsset = (asset: Asset) => {
     // In a real app, this would be saved to the DB
   };
 
@@ -143,6 +148,8 @@ export default function SchoolPage() {
                 setView={handleSetView}
                 onGenerateBatch={handleGenerateBatch}
                 instituicaoId={instituicaoId || undefined}
+                userRole="ESCOLA"
+                instituicaoNome={schoolInfo?.nomeInstituicao}
               />
             )}
 
@@ -159,6 +166,17 @@ export default function SchoolPage() {
                 occurrences={schoolOccurrences}
                 setView={handleSetView}
                 onRegisterOccurrence={handleRegisterOccurrence}
+              />
+            )}
+
+            {currentView === 'novo-ativo' && (
+              <NovoAtivoView
+                setView={handleSetView}
+                onRegisterAsset={handleRegisterAsset}
+                userRole="ESCOLA"
+                instituicaoId={instituicaoId || undefined}
+                instituicaoNome={schoolInfo?.nomeInstituicao}
+                editingAsset={selectedAsset}
               />
             )}
           </div>

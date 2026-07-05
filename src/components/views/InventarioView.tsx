@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Asset, CategoriaItem, EstadoConservacao, StatusItem } from '@/mockData';
+import { Asset, CategoriaItem } from '@/types';
 import { Card, Button, AssetStatusBadge } from '@/components/UI';
 import { Search, Plus, ListPlus, Eye, FileSpreadsheet } from 'lucide-react';
 
@@ -28,6 +28,8 @@ export const InventarioView: React.FC<InventarioViewProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('Todas');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 25;
 
   const categories: (CategoriaItem | 'Todas')[] = ['Todas', 'INFORMATICA', 'MOBILIARIO', 'ELETRODOMESTICO', 'CONECTIVIDADE', 'PREDIAL', 'OUTRO'];
 
@@ -48,6 +50,42 @@ export const InventarioView: React.FC<InventarioViewProps> = ({
     });
   }, [assets, searchQuery, selectedCategory]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredAssets.length / itemsPerPage));
+
+  const paginationPages = useMemo<Array<number | 'ellipsis'>>(() => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, index) => index + 1);
+    }
+
+    const pages = new Set<number>([1, totalPages, currentPage]);
+
+    for (let offset = 1; offset <= 2; offset += 1) {
+      if (currentPage - offset > 1) pages.add(currentPage - offset);
+      if (currentPage + offset < totalPages) pages.add(currentPage + offset);
+    }
+
+    const sortedPages = Array.from(pages).sort((a, b) => a - b);
+    const result: Array<number | 'ellipsis'> = [];
+
+    sortedPages.forEach((page, index) => {
+      const previous = sortedPages[index - 1];
+      if (previous !== undefined && page - previous > 1) {
+        result.push('ellipsis');
+      }
+      result.push(page);
+    });
+
+    return result;
+  }, [currentPage, totalPages]);
+
+  const paginatedAssets = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredAssets.slice(start, start + itemsPerPage);
+  }, [filteredAssets, currentPage]);
+
+  const startItem = filteredAssets.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+  const endItem = Math.min(currentPage * itemsPerPage, filteredAssets.length);
+
   const stats = useMemo(() => {
     return {
       total: assets.length,
@@ -56,6 +94,16 @@ export const InventarioView: React.FC<InventarioViewProps> = ({
       baixado: assets.filter(a => a.status === 'BAIXADO').length
     };
   }, [assets]);
+
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCategory]);
+
+  React.useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const triggerToast = (msg: string) => {
     setToastMessage(msg);
@@ -122,37 +170,83 @@ export const InventarioView: React.FC<InventarioViewProps> = ({
 
       {/* Database Search Filters */}
       <Card className="p-3">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="relative w-full sm:w-80">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Pesquisar por patrimônio, marca, modelo..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full text-sm rounded border border-slate-200 bg-slate-50 pl-10 pr-3 py-2 focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-blue transition-all placeholder:text-slate-400 font-semibold"
-            />
-          </div>
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="relative w-full sm:w-80">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Pesquisar por patrimônio, marca, modelo..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full text-sm rounded border border-slate-200 bg-slate-50 pl-10 pr-3 py-2 focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-blue transition-all placeholder:text-slate-400 font-semibold"
+              />
+            </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto overflow-hidden">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap hidden md:inline">Categoria:</span>
-            <div className="flex gap-1.5 overflow-x-auto w-full sm:w-auto pb-0.5">
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-3 py-1.5 rounded text-xs font-bold transition-all border whitespace-nowrap cursor-pointer ${
-                    selectedCategory === cat
-                      ? 'bg-brand-blue border-brand-blue text-white shadow-sm'
-                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  {cat === 'Todas' ? 'Todas' : CATEGORIA_LABEL[cat as CategoriaItem]}
-                </button>
-              ))}
+            <div className="flex items-center gap-2 w-full sm:w-auto overflow-hidden">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap hidden md:inline">Categoria:</span>
+              <div className="flex gap-1.5 overflow-x-hidden flex-wrap w-full sm:w-auto pb-0.5">
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`px-3 py-1.5 rounded text-xs font-bold transition-all border whitespace-nowrap cursor-pointer ${
+                      selectedCategory === cat
+                        ? 'bg-brand-blue border-brand-blue text-white shadow-sm'
+                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    {cat === 'Todas' ? 'Todas' : CATEGORIA_LABEL[cat as CategoriaItem]}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between pt-1 border-t border-slate-100">
+            <p className="text-xs text-slate-500">
+              Exibindo <span className="font-semibold text-slate-700">{startItem}</span>-<span className="font-semibold text-slate-700">{endItem}</span> de <span className="font-semibold text-slate-700">{filteredAssets.length}</span> ativos filtrados.
+            </p>
+
+            <div className="flex items-center gap-2 flex-wrap sm:justify-end">
+              <button
+                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 rounded border border-slate-200 bg-white text-xs font-bold text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50"
+              >
+                Anterior
+              </button>
+
+              <div className="flex items-center gap-1 flex-wrap justify-center">
+                {paginationPages.map((page, index) =>
+                  page === 'ellipsis' ? (
+                    <span key={`ellipsis-${index}`} className="text-slate-400 text-xs px-1">...</span>
+                  ) : (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`min-w-9 px-3 py-1.5 rounded border text-xs font-bold transition-all ${
+                        currentPage === page
+                          ? 'bg-brand-blue border-brand-blue text-white'
+                          : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  )
+                )}
+              </div>
+
+              <button
+                onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1.5 rounded border border-slate-200 bg-white text-xs font-bold text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50"
+              >
+                Próxima
+              </button>
+            </div>
+          </div>
+          </div>
       </Card>
 
       {/* Asset Table list */}
@@ -170,8 +264,8 @@ export const InventarioView: React.FC<InventarioViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm font-medium text-slate-700">
-              {filteredAssets.length > 0 ? (
-                filteredAssets.map((asset) => (
+              {paginatedAssets.length > 0 ? (
+                paginatedAssets.map((asset) => (
                   <tr key={asset.id} className="hover:bg-slate-50/70 transition-all duration-150">
                     <td className="py-2.5 px-4 font-mono text-sm font-bold text-slate-600">
                       {asset.numeroPatrimonio || asset.id}
@@ -217,6 +311,13 @@ export const InventarioView: React.FC<InventarioViewProps> = ({
           </table>
         </div>
       </Card>
+
+      {filteredAssets.length > 0 && (
+        <div className="flex items-center justify-between gap-3 text-xs text-slate-500">
+          <span>Página {currentPage} de {totalPages}</span>
+          <span>{itemsPerPage} itens por página</span>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,5 +1,13 @@
 import 'dotenv/config'
-import { TipoInstituicao } from '../src/generated/client'
+import {
+    EstadoConservacao,
+    Papel,
+    Prioridade,
+    StatusItem,
+    StatusOcorrencia,
+    TipoInstituicao,
+    TipoSolicitacao,
+} from '../src/generated/client'
 import prisma from '../src/lib/prisma'
 
 const escolas: {
@@ -100,8 +108,69 @@ function toCoord(raw: number | null): number | null {
     return raw / 1_000_000
 }
 
+function hashString(value: string): number {
+    let hash = 0
+    for (let i = 0; i < value.length; i += 1) {
+        hash = (hash * 31 + value.charCodeAt(i)) >>> 0
+    }
+    return hash
+}
+
+function pickBySeed<T>(arr: T[], seed: number): T {
+    return arr[seed % arr.length]
+}
+
+function randomDateFromPastDays(days: number, seed: number): Date {
+    const now = Date.now()
+    const dayMs = 24 * 60 * 60 * 1000
+    const offset = (seed % days) * dayMs
+    return new Date(now - offset)
+}
+
+const STATUS_ABERTOS = [
+    StatusOcorrencia.ABERTA,
+    StatusOcorrencia.AGUARDANDO_CORRECAO,
+    StatusOcorrencia.AGUARDANDO_APROVACAO,
+    StatusOcorrencia.APROVADA,
+    StatusOcorrencia.AGENDADA,
+    StatusOcorrencia.EM_EXECUCAO,
+]
+
+const STATUS_FECHADOS = [StatusOcorrencia.CONCLUIDA, StatusOcorrencia.RECUSADA, StatusOcorrencia.CANCELADA]
+
+const TIPO_SOLICITACOES = [
+    TipoSolicitacao.SERVICO,
+    TipoSolicitacao.REPARO,
+    TipoSolicitacao.TROCA,
+    TipoSolicitacao.REABASTECIMENTO,
+    TipoSolicitacao.OUTRO,
+]
+
+const PRIORIDADES_POSSIVEIS: Array<Prioridade | null> = [
+    null,
+    Prioridade.BAIXA,
+    Prioridade.MEDIA,
+    Prioridade.ALTA,
+    Prioridade.URGENTE,
+]
+
 async function main() {
     console.log('Iniciando seed de instituicoes...')
+
+    const usuarioMestre = await prisma.usuario.upsert({
+        where: { email: 'mestre.seed@inova.local' },
+        update: { ativo: true, nome: 'Mestre Seed' },
+        create: {
+            nome: 'Mestre Seed',
+            email: 'mestre.seed@inova.local',
+            senhaHash: '<SECRET>',
+            papel: Papel.MESTRE,
+            ativo: true,
+        },
+        select: { id: true },
+    })
+
+    const instituicoesComCoord: Array<{ id: string; nome: string }> = []
 
     for (const escola of escolas) {
         const dados = {
@@ -118,21 +187,163 @@ async function main() {
             select: { id: true },
         })
 
+        let instituicaoId: string
+
         if (existente) {
-            await prisma.instituicao.update({
+            const instituicao = await prisma.instituicao.update({
                 where: { id: existente.id },
                 data: dados,
+                select: { id: true },
             })
+            instituicaoId = instituicao.id
         } else {
-            await prisma.instituicao.create({
+            const instituicao = await prisma.instituicao.create({
                 data: { nome: escola.nome, ativo: true, ...dados },
+                select: { id: true },
             })
+            instituicaoId = instituicao.id
+        }
+
+        if (dados.latitude !== null && dados.longitude !== null) {
+            instituicoesComCoord.push({ id: instituicaoId, nome: escola.nome })
         }
 
         console.log('  OK: ' + escola.nome)
     }
 
-    console.log('\nSeed concluido - ' + escolas.length + ' instituicoes inseridas/atualizadas.')
+    console.log('\nGerando dados de chamados, itens e setores para o mapa de calor...')
+
+    for (const [index, instituicao] of instituicoesComCoord.entries()) {
+        const seedBase = hashString(instituicao.nome)
+
+        const usuarioEscola = await prisma.usuario.upsert({
+            where: { email: `escola.seed.${index + 1}@inova.local` },
+            update: {
+                ativo: true,
+                nome: `Escola Seed ${index + 1}`,
+                instituicaoId: instituicao.id,
+            },
+            create: {
+                nome: `Escola Seed ${index + 1}`,
+                email: `escola.seed.${index + 1}@inova.local`,
+                senhaHash: '<SECRET>',
+                papel: Papel.ESCOLA,
+                ativo: true,
+                instituicaoId: instituicao.id,
+                criadoPorId: usuarioMestre.id,
+            },
+            select: { id: true },
+        })
+
+        const setor = await prisma.setor.upsert({
+            where: { id: `seed-setor-${instituicao.id}` },
+            update: {
+                nome: 'Setor Seed - Mapa de Calor',
+                descricao: 'Dados de demonstração para o mapa de calor',
+                instituicaoId: instituicao.id,
+            },
+            create: {
+                id: `seed-setor-${instituicao.id}`,
+                nome: 'Setor Seed - Mapa de Calor',
+                descricao: 'Dados de demonstração para o mapa de calor',
+                instituicaoId: instituicao.id,
+            },
+            select: { id: true },
+        })
+
+        await prisma.ocorrencia.deleteMany({
+            where: {
+                instituicaoId: instituicao.id,
+                titulo: { startsWith: '[SEED MAPA]' },
+            },
+        })
+
+        await prisma.item.deleteMany({
+            where: {
+                setorId: setor.id,
+                nome: { startsWith: '[SEED MAPA]' },
+            },
+        })
+
+        const quantidadeItens = 3 + (seedBase % 5)
+        const itensData = Array.from({ length: quantidadeItens }).map((_, i) => {
+            const seed = seedBase + i * 11
+            const estado =
+                i % 4 === 0
+                    ? EstadoConservacao.RUIM
+                    : i % 7 === 0
+                        ? EstadoConservacao.INSERVIVEL
+                        : pickBySeed(
+                            [EstadoConservacao.BOM, EstadoConservacao.REGULAR, EstadoConservacao.NOVO],
+                            seed
+                        )
+
+            return {
+                nome: `[SEED MAPA] Item ${i + 1}`,
+                categoria: pickBySeed([
+                    'INFORMATICA',
+                    'MOBILIARIO',
+                    'ELETRODOMESTICO',
+                    'PREDIAL',
+                    'CONECTIVIDADE',
+                ], seed),
+                estadoConservacao: estado,
+                status: StatusItem.ATIVO,
+                setorId: setor.id,
+                cadastradoPorId: usuarioEscola.id,
+                observacoes: 'Item de demonstração para o mapa de calor',
+            }
+        })
+
+        await prisma.item.createMany({ data: itensData })
+
+        const hotspot = index % 8 === 0
+        const quantidadeOcorrencias = hotspot ? 24 + (seedBase % 8) : 6 + (seedBase % 10)
+
+        const ocorrenciasData = Array.from({ length: quantidadeOcorrencias }).map((_, i) => {
+            const seed = seedBase + i * 17
+            const status =
+                i % 10 < 7
+                    ? pickBySeed(STATUS_ABERTOS, seed)
+                    : pickBySeed(STATUS_FECHADOS, seed)
+
+            let prioridade = pickBySeed(PRIORIDADES_POSSIVEIS, seed + 3)
+
+            if (hotspot && i % 3 === 0) {
+                prioridade = Prioridade.URGENTE
+            } else if (hotspot && i % 4 === 0) {
+                prioridade = Prioridade.ALTA
+            }
+
+            const createdAt = randomDateFromPastDays(180, seed)
+            const updatedAt =
+                status === StatusOcorrencia.ABERTA && i % 4 === 0
+                    ? randomDateFromPastDays(120, seed + 400)
+                    : randomDateFromPastDays(30, seed + 200)
+
+            return {
+                titulo: `[SEED MAPA] Chamado ${i + 1} - ${instituicao.nome}`,
+                descricao: 'Chamado de demonstração para visualização de calor no mapa.',
+                tipoSolicitacao: pickBySeed(TIPO_SOLICITACOES, seed + 7),
+                status,
+                prioridade,
+                instituicaoId: instituicao.id,
+                setorId: setor.id,
+                criadoPorId: usuarioEscola.id,
+                observacoesTriagem: prioridade ? 'Classificação gerada automaticamente no seed.' : null,
+                createdAt,
+                updatedAt,
+            }
+        })
+
+        await prisma.ocorrencia.createMany({ data: ocorrenciasData })
+
+        console.log(`  Dados seed: ${instituicao.nome} -> ${quantidadeItens} itens, ${quantidadeOcorrencias} ocorrencias`)
+    }
+
+    console.log(
+        `\nSeed concluido - ${escolas.length} instituicoes e ${instituicoesComCoord.length} unidades com dados de calor.`
+    )
 }
 
 main()

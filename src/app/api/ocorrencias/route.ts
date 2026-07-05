@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     const {
       titulo, descricao, tipoSolicitacao, localizacaoDescricao,
       numeroPatrimonioTexto, itemId, instituicaoId, criadoPorId,
-      prioridade, setorId,
+      prioridade, setorId, anexos,
     } = body;
 
     if (!titulo || !descricao || !tipoSolicitacao || !instituicaoId || !criadoPorId) {
@@ -110,6 +110,20 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    if (anexos && anexos.length > 0) {
+      await prisma.anexo.createMany({
+        data: anexos.map((a: any) => ({
+          tipo: a.tipo,
+          url: a.url,
+          nomeArquivo: a.nomeArquivo,
+          mimeType: a.mimeType,
+          tamanhoBytes: a.tamanhoBytes,
+          ocorrenciaId: ocorrencia.id,
+          enviadoPorId: criadoPorId,
+        })),
+      });
+    }
+
     // Create history entry
     await prisma.historicoOcorrencia.create({
       data: {
@@ -121,10 +135,12 @@ export async function POST(request: NextRequest) {
     });
 
     // Disparar notificação de e-mail (não bloqueante)
-    dispararNotificacaoOcorrencia({
-      ocorrenciaId: ocorrencia.id,
-      acao: 'CRIADA',
-    });
+    if (enviarEmail !== false) {
+      dispararNotificacaoOcorrencia({
+        ocorrenciaId: ocorrencia.id,
+        acao: 'CRIADA',
+      });
+    }
 
     return NextResponse.json(formatOccurrence(ocorrencia), { status: 201 });
   } catch (error) {
@@ -139,7 +155,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, ...updateData } = body;
+    const { id, anexos, ...updateData } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'Missing id' }, { status: 400 });
@@ -181,6 +197,25 @@ export async function PUT(request: NextRequest) {
       },
     });
 
+    if (anexos && anexos.length > 0) {
+      // For updates, we usually add new attachments or replace. For simplicity, just create new ones.
+      // Filter out existing ones (if they have an id starting with anexo_)
+      const newAnexos = anexos.filter((a: any) => a.id.startsWith('anexo_') && a.url.startsWith('data:'));
+      if (newAnexos.length > 0) {
+        await prisma.anexo.createMany({
+          data: newAnexos.map((a: any) => ({
+            tipo: a.tipo,
+            url: a.url,
+            nomeArquivo: a.nomeArquivo,
+            mimeType: a.mimeType,
+            tamanhoBytes: a.tamanhoBytes,
+            ocorrenciaId: id,
+            enviadoPorId: updateData.triagemPorId || updateData.aprovadoPorId || existing.criadoPorId,
+          })),
+        });
+      }
+    }
+
     // Create history entry for status change
     if (statusChanged) {
       await prisma.historicoOcorrencia.create({
@@ -194,18 +229,20 @@ export async function PUT(request: NextRequest) {
       });
 
       // Disparar notificação se for recusa ou correção
-      if (data.status === 'RECUSADA') {
-        dispararNotificacaoOcorrencia({
-          ocorrenciaId: id,
-          acao: 'RECUSADA',
-          motivo: data.motivoRecusa || updateData.motivoRecusa,
-        });
-      } else if (data.status === 'AGUARDANDO_CORRECAO') {
-        dispararNotificacaoOcorrencia({
-          ocorrenciaId: id,
-          acao: 'AGUARDANDO_CORRECAO',
-          motivo: data.observacoesTriagem || updateData.observacoesTriagem,
-        });
+      if (updateData.enviarEmail !== false) {
+        if (data.status === 'RECUSADA') {
+          dispararNotificacaoOcorrencia({
+            ocorrenciaId: id,
+            acao: 'RECUSADA',
+            motivo: data.motivoRecusa || updateData.motivoRecusa,
+          });
+        } else if (data.status === 'AGUARDANDO_CORRECAO') {
+          dispararNotificacaoOcorrencia({
+            ocorrenciaId: id,
+            acao: 'AGUARDANDO_CORRECAO',
+            motivo: data.observacoesTriagem || updateData.observacoesTriagem,
+          });
+        }
       }
     }
 

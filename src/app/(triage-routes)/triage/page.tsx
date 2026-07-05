@@ -101,6 +101,7 @@ export default function TriageDashboard() {
         <Header
           session={session}
           onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+          onNavigate={(view) => setView(view)}
         />
 
         {/* Scrollable screen body */}

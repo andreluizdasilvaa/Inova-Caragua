@@ -543,10 +543,10 @@ export const LoteView: React.FC<LoteViewProps> = ({
   const [showSchoolDropdown, setShowSchoolDropdown] = useState(false);
   const [schoolSearch, setSchoolSearch] = useState('');
   const [schools, setSchools] = useState<any[]>([]);
+  const [setores, setSetores] = useState<any[]>([]);
 
   const isMestre = userRole === 'MESTRE';
 
-  // Fetch schools from API
   useEffect(() => {
     if (isMestre) {
       api.instituicoes.list()
@@ -554,6 +554,18 @@ export const LoteView: React.FC<LoteViewProps> = ({
         .catch(() => setSchools([]));
     }
   }, [isMestre]);
+
+  const resolvedInstituicaoId = isMestre ? instituicaoId : (propInstituicaoId || '');
+
+  useEffect(() => {
+    if (resolvedInstituicaoId) {
+      api.setores.list(resolvedInstituicaoId)
+        .then(data => setSetores(Array.isArray(data) ? data : []))
+        .catch(() => setSetores([]));
+    } else {
+      setSetores([]);
+    }
+  }, [resolvedInstituicaoId]);
 
   const selectedSchool = schools.find((s: any) => s.id === instituicaoId);
   const selectedSchoolName = isMestre 
@@ -582,7 +594,7 @@ export const LoteView: React.FC<LoteViewProps> = ({
   };
 
   const handleBatchGenerate = () => {
-    const resolvedInstituicaoId = isMestre ? instituicaoId : (propInstituicaoId || 'inst_padrao');
+    const finalInstituicaoId = resolvedInstituicaoId || 'inst_padrao';
 
     const batch: Asset[] = previewSequence.map((pat) => ({
       id: pat,
@@ -599,8 +611,8 @@ export const LoteView: React.FC<LoteViewProps> = ({
       observacoes: null,
       createdAt: new Date(),
       updatedAt: new Date(),
-      setorId: assetLocation || 'setor_padrao',
-      instituicaoId: resolvedInstituicaoId,
+      setorId: assetLocation || (setores.length > 0 ? setores[0].id : 'setor_padrao'),
+      instituicaoId: finalInstituicaoId,
       cadastradoPorId: null,
     }));
 
@@ -890,8 +902,20 @@ export const LoteView: React.FC<LoteViewProps> = ({
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Local de Instalação</label>
-                  <input type="text" value={assetLocation} onChange={(e) => setAssetLocation(e.target.value)}
-                    className="w-full text-sm rounded border border-slate-200 bg-slate-50 p-2 outline-none focus:bg-white focus:ring-1 focus:ring-brand-blue transition-all font-semibold text-slate-700" />
+                  <select 
+                    value={assetLocation} 
+                    onChange={(e) => setAssetLocation(e.target.value)}
+                    className="w-full text-sm rounded border border-slate-200 bg-white p-2 outline-none focus:ring-1 focus:ring-brand-blue transition-all font-semibold text-slate-700"
+                  >
+                    <option value="" disabled>Selecione um local</option>
+                    {setores.length > 0 ? (
+                      setores.map(s => (
+                        <option key={s.id} value={s.id}>{s.nome}</option>
+                      ))
+                    ) : (
+                      <option value="" disabled>Nenhum local cadastrado</option>
+                    )}
+                  </select>
                 </div>
               </div>
 

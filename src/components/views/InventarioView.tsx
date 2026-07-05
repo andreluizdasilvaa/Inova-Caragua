@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { Asset, CategoriaItem, EstadoConservacao, StatusItem } from '@/types';
 import { Card, Button, AssetStatusBadge } from '@/components/UI';
-import { Search, Plus, ListPlus, Eye, FileSpreadsheet } from 'lucide-react';
+import { Search, Plus, ListPlus, Eye, FileSpreadsheet, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface InventarioViewProps {
   assets: Asset[];
@@ -112,6 +112,26 @@ export const InventarioView: React.FC<InventarioViewProps> = ({
     }, 2500);
   };
 
+  const handleDeleteItem = async (asset: Asset) => {
+    if (confirm(`Tem certeza que deseja excluir o item ${asset.numeroPatrimonio || asset.nome}?`)) {
+      try {
+        const response = await fetch('/api/itens', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: asset.id, status: 'BAIXADO' })
+        });
+        if (response.ok) {
+          triggerToast(`Item ${asset.numeroPatrimonio || asset.nome} excluído com sucesso!`);
+          setTimeout(() => window.location.reload(), 1500);
+        } else {
+          triggerToast('Erro ao excluir item.');
+        }
+      } catch (err) {
+        triggerToast('Erro na conexão ao excluir item.');
+      }
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Toast Notification */}
@@ -125,7 +145,7 @@ export const InventarioView: React.FC<InventarioViewProps> = ({
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Registro de Ativos e Inventário</h2>
+          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Registro de Inventário</h2>
           <p className="text-sm text-slate-400">Administre o ciclo de vida dos bens patrimoniais das unidades escolares.</p>
         </div>
         <div className="flex items-center gap-2">
@@ -143,7 +163,7 @@ export const InventarioView: React.FC<InventarioViewProps> = ({
             className="bg-brand-blue hover:bg-brand-teal flex items-center gap-1 text-xs py-2 px-3"
           >
             <Plus className="w-4 h-4" />
-            <span>Novo Ativo</span>
+            <span>Novo Item</span>
           </Button>
         </div>
       </div>
@@ -151,11 +171,11 @@ export const InventarioView: React.FC<InventarioViewProps> = ({
       {/* Top Asset Counter Indicators */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-brand-navy text-white rounded p-4 border border-slate-700/50 flex flex-col justify-between">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-300">Total de Ativos</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-300">Total de Itens</span>
           <p className="text-2xl font-black mt-1 leading-none">{stats.total}</p>
         </div>
         <div className="bg-white rounded p-4 border border-slate-200 flex flex-col justify-between">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Ativos</span>
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Itens</span>
           <p className="text-2xl font-black text-teal-600 mt-1 leading-none">{stats.ativo}</p>
         </div>
         <div className="bg-white rounded p-4 border border-slate-200 flex flex-col justify-between">
@@ -205,44 +225,42 @@ export const InventarioView: React.FC<InventarioViewProps> = ({
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between pt-1 border-t border-slate-100">
             <p className="text-xs text-slate-500">
-              Exibindo <span className="font-semibold text-slate-700">{startItem}</span>-<span className="font-semibold text-slate-700">{endItem}</span> de <span className="font-semibold text-slate-700">{filteredAssets.length}</span> ativos filtrados.
+              Exibindo <span className="font-semibold text-slate-700">{startItem}</span>-<span className="font-semibold text-slate-700">{endItem}</span> de <span className="font-semibold text-slate-700">{filteredAssets.length}</span> itens filtrados.
             </p>
 
-            <div className="flex items-center gap-2 flex-wrap sm:justify-end">
+            <div className="flex items-center gap-1">
               <button
                 onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-1.5 rounded border border-slate-200 bg-white text-xs font-bold text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50"
+                className="flex items-center justify-center w-7 h-7 text-xs font-medium text-slate-600 hover:text-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                Anterior
+                <ChevronLeft className="w-4 h-4" />
               </button>
 
-              <div className="flex items-center gap-1 flex-wrap justify-center">
-                {paginationPages.map((page, index) =>
-                  page === 'ellipsis' ? (
-                    <span key={`ellipsis-${index}`} className="text-slate-400 text-xs px-1">...</span>
-                  ) : (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`min-w-9 px-3 py-1.5 rounded border text-xs font-bold transition-all ${
-                        currentPage === page
-                          ? 'bg-brand-blue border-brand-blue text-white'
-                          : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  )
-                )}
-              </div>
+              {paginationPages.map((page, index) =>
+                page === 'ellipsis' ? (
+                  <span key={`ellipsis-${index}`} className="w-7 h-7 text-xs font-medium text-slate-400 flex items-center justify-center">...</span>
+                ) : (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page as number)}
+                    className={`w-7 h-7 text-xs font-medium rounded transition-all ${
+                      currentPage === page
+                        ? 'bg-brand-blue text-white'
+                        : 'text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                )
+              )}
 
               <button
                 onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
                 disabled={currentPage === totalPages}
-                className="px-3 py-1.5 rounded border border-slate-200 bg-white text-xs font-bold text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50"
+                className="flex items-center justify-center w-7 h-7 text-xs font-medium text-slate-600 hover:text-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                Próxima
+                <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -291,11 +309,11 @@ export const InventarioView: React.FC<InventarioViewProps> = ({
                         <Eye className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => triggerToast(`Termo de responsabilidade gerado para o ativo ${asset.numeroPatrimonio}`)}
-                        title="Exportar Termo"
-                        className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-all inline-flex items-center cursor-pointer"
+                        onClick={() => handleDeleteItem(asset)}
+                        title="Excluir Item"
+                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-all inline-flex items-center cursor-pointer"
                       >
-                        <FileSpreadsheet className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </td>
                   </tr>
@@ -303,7 +321,7 @@ export const InventarioView: React.FC<InventarioViewProps> = ({
               ) : (
                 <tr>
                   <td colSpan={6} className="py-10 text-center text-slate-400 font-medium">
-                    Nenhum ativo patrimonial correspondente encontrado.
+                    Nenhum item patrimonial correspondente encontrado.
                   </td>
                 </tr>
               )}

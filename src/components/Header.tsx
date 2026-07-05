@@ -6,13 +6,15 @@ import { useNotifications } from './layout/NotificationContext';
 interface HeaderProps {
   session: Session | null;
   onMenuClick?: () => void;
+  onNavigate?: (view: string) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   session,
-  onMenuClick
+  onMenuClick,
+  onNavigate
 }) => {
-  const { notifications, unreadCount, markAsRead, clearAll } = useNotifications();
+  const { notifications, unreadCount, markAsRead, clearAll, removeNotification } = useNotifications();
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -78,26 +80,36 @@ export const Header: React.FC<HeaderProps> = ({
                   notifications.map(notif => (
                     <div 
                       key={notif.id} 
-                      className={`px-4 py-3 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors cursor-pointer flex gap-3 ${!notif.read ? 'bg-blue-50/50' : ''}`}
-                      onClick={() => markAsRead(notif.id)}
+                      className={`px-4 py-3 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors cursor-pointer flex gap-3 group relative ${!notif.read ? 'bg-blue-50/50' : ''}`}
+                      onClick={() => {
+                        markAsRead(notif.id);
+                        if (onNavigate) {
+                          const text = (notif.title + ' ' + notif.message).toLowerCase();
+                          if (text.includes('ocorrência') || text.includes('chamado')) {
+                            onNavigate('ocorrencias');
+                          } else if (text.includes('inventário') || text.includes('item') || text.includes('ativo')) {
+                            onNavigate('inventario');
+                          } else if (text.includes('usuário')) {
+                            onNavigate('usuarios');
+                          }
+                        }
+                      }}
                     >
                       <div className={`mt-0.5 w-2 h-2 rounded-full flex-shrink-0 ${!notif.read ? 'bg-brand-blue' : 'bg-slate-300'}`} />
-                      <div className="flex-1">
+                      <div className="flex-1 pr-6">
                         <p className="text-sm font-bold text-slate-800">{notif.title}</p>
                         <p className="text-xs text-slate-600 mt-0.5 line-clamp-2">{notif.message}</p>
                         <p className="text-[10px] text-slate-400 mt-1">
                           {notif.timestamp.toLocaleTimeString()}
                         </p>
                       </div>
-                      {!notif.read && (
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); markAsRead(notif.id); }}
-                          className="text-slate-400 hover:text-brand-blue p-1"
-                          title="Marcar como lida"
-                        >
-                          <Check className="w-4 h-4" />
-                        </button>
-                      )}
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); removeNotification(notif.id); }}
+                        className="absolute right-4 top-3 text-slate-300 hover:text-rose-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Excluir notificação"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   ))
                 )}

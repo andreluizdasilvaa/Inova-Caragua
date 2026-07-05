@@ -105,7 +105,7 @@ export const DetalhesView: React.FC<DetalhesViewProps> = ({
         </div>
 
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => triggerToast('Laudo técnico gerado em PDF!')}
+          <Button variant="outline" onClick={() => window.print()}
             className="text-slate-700 border-slate-300 hover:bg-slate-50 flex items-center gap-1 text-xs py-2 px-3">
             <Download className="w-4 h-4" /><span>Exportar PDF</span>
           </Button>
@@ -132,10 +132,6 @@ export const DetalhesView: React.FC<DetalhesViewProps> = ({
               <span className="text-sm font-bold text-slate-800">{currentAsset.modelo || '—'}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-slate-100">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Nº de Série</span>
-              <span className="text-sm font-mono font-bold text-slate-700">{currentAsset.numeroSerie || '—'}</span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-slate-100">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Categoria</span>
               <span className="text-sm font-bold text-brand-blue">{CATEGORIA_LABEL[currentAsset.categoria]}</span>
             </div>
@@ -157,12 +153,6 @@ export const DetalhesView: React.FC<DetalhesViewProps> = ({
               <span className="text-sm font-bold text-slate-800 flex items-center gap-1">
                 <Calendar className="w-4 h-4 text-slate-400" />
                 {formatDate(currentAsset.dataAquisicao || new Date())}
-              </span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-slate-100">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Valor</span>
-              <span className="text-sm font-bold text-slate-800">
-                {currentAsset.valorAquisicao ? `R$ ${Number(currentAsset.valorAquisicao).toFixed(2)}` : '—'}
               </span>
             </div>
             <div className="flex justify-between items-center py-2">

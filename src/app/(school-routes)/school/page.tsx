@@ -203,6 +203,7 @@ export default function SchoolPage() {
         <Header
           session={session}
           onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+          onNavigate={(view) => setView(view)}
         />
 
         <main className="flex-1 p-4 mt-12 overflow-y-auto">

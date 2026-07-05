@@ -195,16 +195,6 @@ export const UsuariosView: React.FC<UsuariosViewProps> = () => {
                 </div>
               )}
               
-              <div className="space-y-1 flex items-center gap-2 md:col-span-2 mt-2">
-                <input 
-                  type="checkbox"
-                  id="ativo"
-                  checked={formData.ativo}
-                  onChange={e => setFormData({...formData, ativo: e.target.checked})}
-                  className="w-4 h-4"
-                />
-                <label htmlFor="ativo" className="text-sm font-semibold cursor-pointer">Usuário Ativo</label>
-              </div>
             </div>
 
             <div className="flex justify-end gap-3 pt-4">

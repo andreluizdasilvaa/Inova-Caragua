@@ -62,6 +62,8 @@ export const TriagemView: React.FC<TriagemViewProps> = ({
   const [toastMessage, setToastMessage] = useState('');
   const [schoolStats, setSchoolStats] = useState<SchoolStats | null>(null);
   const [assetHistoryList, setAssetHistoryList] = useState<OccurrenceHistory[]>([]);
+  const [attachedFiles, setAttachedFiles] = useState<{name: string; size: number; type: string; base64?: string}[]>([]);
+  const [enviarEmail, setEnviarEmail] = useState(true);
   
   const [sortByRecent, setSortByRecent] = useState(false);
   const [sortByOldest, setSortByOldest] = useState(false);
@@ -74,6 +76,7 @@ export const TriagemView: React.FC<TriagemViewProps> = ({
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setTriagePriority(currentOcc.prioridade);
       setTriageFeedback('');
+      setAttachedFiles([]);
       
       // Fetch school stats
       if (currentOcc.instituicaoId) {
@@ -186,6 +189,18 @@ export const TriagemView: React.FC<TriagemViewProps> = ({
       observacoesTriagem: newStatus === 'AGUARDANDO_APROVACAO' ? (triageFeedback || currentOcc.observacoesTriagem) : currentOcc.observacoesTriagem,
       // When sending back for correction, store the feedback as motivoRecusa
       motivoRecusa: newStatus === 'AGUARDANDO_CORRECAO' ? (triageFeedback || currentOcc.observacoesTriagem || '') : currentOcc.motivoRecusa,
+      anexos: attachedFiles.length > 0 ? [
+        ...(currentOcc.anexos || []),
+        ...attachedFiles.map((f, idx) => ({
+          id: `anexo_${Date.now()}_${idx}`,
+          tipo: 'OUTRO',
+          url: f.base64 || '',
+          nomeArquivo: f.name,
+          mimeType: f.type,
+          tamanhoBytes: f.size
+        }))
+      ] : currentOcc.anexos,
+      enviarEmail // extra property just to pass to API
     };
 
     onUpdateOccurrence(updated);
@@ -477,6 +492,60 @@ export const TriagemView: React.FC<TriagemViewProps> = ({
                     placeholder="Ex: Verificar disjuntor, solicitar orçamento..."
                     className="w-full text-sm border border-slate-200 rounded p-2.5 outline-none focus:ring-1 focus:ring-brand-blue transition-all bg-white font-medium placeholder:text-slate-400 resize-none" />
                 </div>
+                
+                <div className="space-y-2 mb-4">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">4. Anexos Adicionais (Base64)</label>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*,application/pdf"
+                    className="w-full text-sm border border-slate-200 rounded p-2 bg-white text-slate-700"
+                    onChange={async (e) => {
+                      if (!e.target.files) return;
+                      const files = Array.from(e.target.files);
+                      const validFiles: typeof attachedFiles = [];
+                      for (const file of files) {
+                        try {
+                          const base64 = await new Promise<string>((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onload = () => resolve(reader.result as string);
+                            reader.onerror = reject;
+                            reader.readAsDataURL(file);
+                          });
+                          validFiles.push({ name: file.name, size: file.size, type: file.type, base64 });
+                        } catch (err) {
+                          console.error(err);
+                        }
+                      }
+                      setAttachedFiles(prev => [...prev, ...validFiles]);
+                    }}
+                  />
+                  {attachedFiles.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {attachedFiles.map((f, i) => (
+                        <div key={i} className="text-xs bg-slate-100 rounded px-2 py-1 flex items-center gap-1 border border-slate-200">
+                          <span className="truncate max-w-[120px]">{f.name}</span>
+                          <button onClick={() => setAttachedFiles(prev => prev.filter((_, idx) => idx !== i))} className="text-rose-500 hover:text-rose-700">
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between mt-2 mb-4">
+                  <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={enviarEmail} 
+                      onChange={(e) => setEnviarEmail(e.target.checked)}
+                      className="rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
+                    />
+                    Enviar notificação por e-mail
+                  </label>
+                </div>
+
                 <div className="flex flex-col sm:flex-row gap-2 justify-end pt-3 border-t border-slate-100">
                   <Button variant="outline" onClick={() => handleAction('AGUARDANDO_CORRECAO')}
                     className="border-slate-300 text-slate-600 hover:bg-slate-50 text-xs py-2 px-3">

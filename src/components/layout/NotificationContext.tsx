@@ -20,6 +20,7 @@ interface NotificationContextData {
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
   clearAll: () => void;
+  removeNotification: (id: string) => void;
 }
 
 const NotificationContext = createContext<NotificationContextData | undefined>(undefined);
@@ -53,6 +54,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     setNotifications([]);
   };
 
+  const removeNotification = (id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
   return (
     <NotificationContext.Provider value={{
       notifications,
@@ -60,7 +65,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       addNotification,
       markAsRead,
       markAllAsRead,
-      clearAll
+      clearAll,
+      removeNotification
     }}>
       {children}
     </NotificationContext.Provider>

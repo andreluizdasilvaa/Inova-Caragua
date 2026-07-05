@@ -90,7 +90,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-white truncate leading-none flex items-center gap-1.5">
               {session?.user?.name ?? 'Usuário'}
-              <Settings className="w-4 h-4 text-slate-500" />
             </p>
             <p className="text-xs text-slate-500 truncate mt-0.5">{session?.user?.email ?? ''}</p>
           </div>

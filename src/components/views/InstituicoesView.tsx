@@ -22,6 +22,8 @@ export const InstituicoesView: React.FC<InstituicoesViewProps> = () => {
     endereco: '',
     bairro: '',
     telefone: '',
+    latitude: '',
+    longitude: '',
     ativo: true,
   });
 
@@ -51,6 +53,8 @@ export const InstituicoesView: React.FC<InstituicoesViewProps> = () => {
       endereco: inst.endereco || '',
       bairro: inst.bairro || '',
       telefone: inst.telefone || '',
+      latitude: inst.latitude ? String(inst.latitude) : '',
+      longitude: inst.longitude ? String(inst.longitude) : '',
       ativo: inst.ativo ?? true,
     });
     setIsEditing(true);
@@ -66,6 +70,8 @@ export const InstituicoesView: React.FC<InstituicoesViewProps> = () => {
       endereco: '',
       bairro: '',
       telefone: '',
+      latitude: '',
+      longitude: '',
       ativo: true,
     });
     setIsEditing(true);
@@ -139,9 +145,11 @@ export const InstituicoesView: React.FC<InstituicoesViewProps> = () => {
                   onChange={e => setFormData({...formData, tipo: e.target.value})}
                   className="w-full border rounded-lg p-2"
                 >
-                  <option value="MUNICIPAL">Municipal</option>
-                  <option value="ESTADUAL">Estadual</option>
-                  <option value="ADMINISTRATIVO">Administrativo</option>
+                  <option value="CRECHE">Creche</option>
+                  <option value="EMEI">EMEI</option>
+                  <option value="EMEF">EMEF</option>
+                  <option value="EMEIF">EMEIF</option>
+                  <option value="OUTRO">Outro</option>
                 </select>
               </div>
               <div className="space-y-1">
@@ -183,6 +191,28 @@ export const InstituicoesView: React.FC<InstituicoesViewProps> = () => {
                   value={formData.telefone} 
                   onChange={e => setFormData({...formData, telefone: e.target.value})}
                   className="w-full border rounded-lg p-2"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-semibold">Latitude</label>
+                <input 
+                  type="number"
+                  step="any"
+                  value={formData.latitude} 
+                  onChange={e => setFormData({...formData, latitude: e.target.value})}
+                  className="w-full border rounded-lg p-2"
+                  placeholder="Ex: -23.6273"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-semibold">Longitude</label>
+                <input 
+                  type="number"
+                  step="any"
+                  value={formData.longitude} 
+                  onChange={e => setFormData({...formData, longitude: e.target.value})}
+                  className="w-full border rounded-lg p-2"
+                  placeholder="Ex: -45.4286"
                 />
               </div>
               <div className="space-y-1 flex items-center gap-2 mt-6">

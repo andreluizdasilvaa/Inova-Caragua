@@ -569,7 +569,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <span>Baixo <span className="mx-1">→</span> Alto</span>
             </div>
           </div>
-          <span className="text-xs text-slate-500">Total de peso: <strong className="text-slate-800">{totalPeso}</strong></span>
         </div>
 
         {/* Map and Controls Row */}

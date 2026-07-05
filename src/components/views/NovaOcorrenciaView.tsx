@@ -45,6 +45,7 @@ interface AttachedFile {
   size: number;
   type: string;
   preview?: string;
+  base64?: string;
 }
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -74,6 +75,7 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
   const [localizacao, setLocalizacao] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<Prioridade>('MEDIA');
+  const [enviarEmail, setEnviarEmail] = useState(true);
   
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -88,13 +90,15 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
   const [selectedSetorId, setSelectedSetorId] = useState<string>('');
 
   // Fetch setores
+  const targetInstituicaoId = (isEditing && editingOccurrence) ? editingOccurrence.instituicaoId : propInstituicaoId;
+  
   useEffect(() => {
-    if (propInstituicaoId) {
-      api.setores.list(propInstituicaoId)
+    if (targetInstituicaoId) {
+      api.setores.list(targetInstituicaoId)
         .then(data => setSetores(data))
         .catch(err => console.error('Erro ao buscar setores:', err));
     }
-  }, [propInstituicaoId]);
+  }, [targetInstituicaoId]);
 
   // Pre-fill form when editing
   useEffect(() => {
@@ -106,8 +110,17 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
       setSelectedSetorId(editingOccurrence.setorId || '');
       setSolicitacaoType(editingOccurrence.tipoSolicitacao);
       setPriority(editingOccurrence.prioridade || 'MEDIA');
+      
+      if (editingOccurrence.itemId && assets.length > 0) {
+        const item = assets.find(a => a.id === editingOccurrence.itemId);
+        if (item) {
+          setSelectedAsset(item);
+          setSearchPatrimonio(item.numeroPatrimonio || '');
+          setSearchNome(item.nome);
+        }
+      }
     }
-  }, [isEditing, editingOccurrence]);
+  }, [isEditing, editingOccurrence, assets]);
 
   // Assets filtrados - combina os dois campos de busca
   const filteredAssets = useMemo(() => {
@@ -157,16 +170,31 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
     setSearchNome('');
   };
 
-  const processFiles = (files: File[]) => {
+  const processFiles = async (files: File[]) => {
     const validFiles: AttachedFile[] = [];
     for (const file of files) {
       if (file.size > MAX_FILE_SIZE) continue;
       if (!ALLOWED_TYPES.includes(file.type)) continue;
-      const attachedFile: AttachedFile = {
-        name: file.name, size: file.size, type: file.type,
-      };
-      if (file.type.startsWith('image/')) attachedFile.preview = URL.createObjectURL(file);
-      validFiles.push(attachedFile);
+      
+      try {
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        
+        const attachedFile: AttachedFile = {
+          name: file.name, 
+          size: file.size, 
+          type: file.type,
+          base64: base64,
+        };
+        if (file.type.startsWith('image/')) attachedFile.preview = base64; // Use base64 as preview directly
+        validFiles.push(attachedFile);
+      } catch (err) {
+        console.error('Error reading file:', err);
+      }
     }
     setAttachedFiles(prev => [...prev, ...validFiles]);
   };
@@ -184,8 +212,7 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
 
   const handleRemoveFile = (index: number) => {
     setAttachedFiles(prev => {
-      const file = prev[index];
-      if (file.preview) URL.revokeObjectURL(file.preview);
+      // no need to revoke URL as we are using base64 now
       return prev.filter((_, i) => i !== index);
     });
   };
@@ -219,7 +246,7 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
       anexos: attachedFiles.map((file, idx) => ({
         id: `anexo_${Date.now()}_${idx}`,
         tipo: 'FOTO_OCORRENCIA',
-        url: file.preview || '',
+        url: file.base64 || '', // Use the base64 string directly
         nomeArquivo: file.name,
         mimeType: file.type,
         tamanhoBytes: file.size,
@@ -537,6 +564,18 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Anexos</span>
                 <p className="text-sm font-bold text-slate-800 mt-0.5">{attachedFiles.length > 0 ? `${attachedFiles.length} arquivo(s)` : 'Nenhum'}</p>
               </div>
+            </div>
+
+            <div className="mt-4 flex items-center justify-between">
+              <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={enviarEmail} 
+                  onChange={(e) => setEnviarEmail(e.target.checked)}
+                  className="rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
+                />
+                Enviar notificação por e-mail
+              </label>
             </div>
 
             <Button variant="secondary" onClick={handleSubmit} disabled={isSubmitting}

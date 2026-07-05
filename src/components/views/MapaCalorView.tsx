@@ -311,7 +311,6 @@ export const MapaCalorView: React.FC = () => {
                 <span>Baixo</span><span>Alto</span>
               </div>
             </div>
-            <span className="text-xs text-slate-500">Total de peso: <strong className="text-slate-800">{totalPeso}</strong></span>
           </div>
         </div>
       </div>

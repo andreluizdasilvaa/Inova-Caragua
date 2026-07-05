@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { Asset, CategoriaItem, StatusItem, EstadoConservacao } from '@/mockData';
+import { Asset, CategoriaItem, StatusItem, EstadoConservacao, mockSchoolStats } from '@/mockData';
 import { Card, Button } from '@/components/UI';
 import { 
   ArrowLeft, 
@@ -11,7 +11,10 @@ import {
   FileText, 
   MapPin, 
   Calendar,
-  AlertTriangle
+  AlertTriangle,
+  School,
+  ChevronDown,
+  Search
 } from 'lucide-react';
 
 interface NovoAtivoViewProps {
@@ -66,11 +69,27 @@ export const NovoAtivoView: React.FC<NovoAtivoViewProps> = ({
   const [status, setStatus] = useState<StatusItem>('ATIVO');
   const [dataAquisicao, setDataAquisicao] = useState('');
   const [instituicaoId, setInstituicaoId] = useState(propInstituicaoId || '');
+  const [showSchoolDropdown, setShowSchoolDropdown] = useState(false);
+  const [schoolSearch, setSchoolSearch] = useState('');
 
   // UI state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const isMestre = userRole === 'MESTRE';
+  const isEscola = userRole === 'ESCOLA';
+
+  // Find the selected school name
+  const selectedSchool = mockSchoolStats.find(s => s.instituicaoId === instituicaoId);
+  const selectedSchoolName = isEscola 
+    ? (instituicaoNome || 'Minha Escola') 
+    : (selectedSchool?.nomeInstituicao || '');
+
+  // Filter schools for the selector
+  const filteredSchools = mockSchoolStats.filter(s => 
+    s.nomeInstituicao.toLowerCase().includes(schoolSearch.toLowerCase())
+  );
 
   // Filter localizacao options
   const filteredLocalizacoes = LOCALIZACAO_OPTIONS.filter(
@@ -85,7 +104,7 @@ export const NovoAtivoView: React.FC<NovoAtivoViewProps> = ({
       newErrors.nome = 'O nome do item é obrigatório.';
     }
 
-    if (userRole === 'MESTRE' && !instituicaoId.trim()) {
+    if (isMestre && !instituicaoId.trim()) {
       newErrors.instituicaoId = 'Selecione a unidade escolar.';
     }
 
@@ -100,6 +119,8 @@ export const NovoAtivoView: React.FC<NovoAtivoViewProps> = ({
     }
 
     setIsSubmitting(true);
+
+    const resolvedInstituicaoId = isMestre ? instituicaoId : (propInstituicaoId || 'inst_padrao');
 
     const newAsset: Asset = {
       id: numeroPatrimonio.trim() || `PAT-${Date.now()}`,
@@ -117,7 +138,7 @@ export const NovoAtivoView: React.FC<NovoAtivoViewProps> = ({
       createdAt: new Date(),
       updatedAt: new Date(),
       setorId: localizacao.trim() || 'setor_padrao',
-      instituicaoId: userRole === 'MESTRE' ? instituicaoId : propInstituicaoId || 'inst_padrao',
+      instituicaoId: resolvedInstituicaoId,
       cadastradoPorId: null,
     };
 
@@ -164,7 +185,85 @@ export const NovoAtivoView: React.FC<NovoAtivoViewProps> = ({
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         <div className="lg:col-span-8 space-y-5">
-          
+
+          {/* 0. UNIDADE ESCOLAR (apenas para MESTRE) */}
+          {isMestre && (
+            <Card className="p-5 space-y-4">
+              <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                <School className="w-4 h-4 text-brand-blue" />
+                <h3 className="text-sm font-bold text-slate-800">Unidade Escolar</h3>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                  Selecione a Escola <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <School className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 z-10" />
+                  <input
+                    type="text"
+                    readOnly
+                    value={selectedSchoolName}
+                    onFocus={() => setShowSchoolDropdown(true)}
+                    placeholder="Clique para selecionar uma escola..."
+                    className={`w-full text-sm rounded border bg-slate-50 pl-10 pr-10 py-2.5 outline-none focus:bg-white focus:ring-1 focus:ring-brand-blue transition-all font-semibold cursor-pointer ${
+                      errors.instituicaoId ? 'border-rose-300 bg-rose-50' : 'border-slate-200'
+                    }`}
+                  />
+                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+
+                  {showSchoolDropdown && (
+                    <div className="absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden">
+                      {/* Search dentro do dropdown */}
+                      <div className="p-2 border-b border-slate-100">
+                        <div className="relative">
+                          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            value={schoolSearch}
+                            onChange={(e) => setSchoolSearch(e.target.value)}
+                            placeholder="Buscar escola..."
+                            className="w-full text-xs rounded border border-slate-200 bg-slate-50 pl-8 pr-2 py-1.5 outline-none focus:ring-1 focus:ring-brand-blue font-medium"
+                            autoFocus
+                          />
+                        </div>
+                      </div>
+                      <div className="max-h-48 overflow-y-auto">
+                        {filteredSchools.length > 0 ? (
+                          filteredSchools.map((school) => (
+                            <button
+                              key={school.instituicaoId}
+                              onClick={() => {
+                                setInstituicaoId(school.instituicaoId);
+                                setSchoolSearch('');
+                                setShowSchoolDropdown(false);
+                              }}
+                              className={`w-full text-left px-4 py-2.5 hover:bg-slate-50 border-b border-slate-100 last:border-b-0 transition-colors cursor-pointer ${
+                                instituicaoId === school.instituicaoId ? 'bg-brand-ice' : ''
+                              }`}
+                            >
+                              <p className="text-sm font-semibold text-slate-800">{school.nomeInstituicao}</p>
+                              <p className="text-[10px] text-slate-400 font-mono mt-0.5">{school.instituicaoId}</p>
+                            </button>
+                          ))
+                        ) : (
+                          <div className="px-4 py-4 text-center text-sm text-slate-400">
+                            Nenhuma escola encontrada
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {errors.instituicaoId && (
+                  <p className="text-xs font-bold text-rose-600 flex items-center gap-1">
+                    <AlertTriangle className="w-3.5 h-3.5" />{errors.instituicaoId}
+                  </p>
+                )}
+              </div>
+            </Card>
+          )}
+
           {/* 1. IDENTIFICAÇÃO DO ATIVO */}
           <Card className="p-5 space-y-4">
             <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
@@ -392,6 +491,18 @@ export const NovoAtivoView: React.FC<NovoAtivoViewProps> = ({
               <h3 className="text-sm font-bold text-slate-800">Resumo do Cadastro</h3>
             </div>
             <div className="space-y-3">
+              {/* Mostrar escola no resumo para MESTRE */}
+              {isMestre && (
+                <>
+                  <div>
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Unidade Escolar</span>
+                    <p className="text-sm font-bold text-slate-800 mt-0.5 truncate">
+                      {selectedSchoolName || '—'}
+                    </p>
+                  </div>
+                  <div className="h-px bg-slate-100" />
+                </>
+              )}
               <div>
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Patrimônio</span>
                 <p className="text-sm font-mono font-bold text-slate-800 mt-0.5 truncate">

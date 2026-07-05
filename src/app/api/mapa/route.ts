@@ -154,7 +154,7 @@ export async function GET(req: NextRequest) {
       })
 
       for (const registro of itensAgrupados) {
-        const instituicaoId = setorParaInstituicao.get(registro.setorId)
+        const instituicaoId = setorParaInstituicao.get(registro.setorId!)
         if (!instituicaoId) continue
         const acumulado = pesoPorInstituicao.get(instituicaoId) ?? 0
         pesoPorInstituicao.set(instituicaoId, acumulado + registro._count._all)

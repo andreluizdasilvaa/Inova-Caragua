@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { dispararNotificacaoOcorrencia } from '@/lib/ocorrencia-mailer';
 
 export async function GET(request: NextRequest) {
   try {
@@ -119,6 +120,12 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Disparar notificação de e-mail (não bloqueante)
+    dispararNotificacaoOcorrencia({
+      ocorrenciaId: ocorrencia.id,
+      acao: 'CRIADA',
+    });
+
     return NextResponse.json(formatOccurrence(ocorrencia), { status: 201 });
   } catch (error) {
     console.error('Error creating ocorrencia:', error);
@@ -185,6 +192,21 @@ export async function PUT(request: NextRequest) {
           autorId: updateData.triagemPorId || updateData.aprovadoPorId || existing.criadoPorId,
         },
       });
+
+      // Disparar notificação se for recusa ou correção
+      if (data.status === 'RECUSADA') {
+        dispararNotificacaoOcorrencia({
+          ocorrenciaId: id,
+          acao: 'RECUSADA',
+          motivo: data.motivoRecusa || updateData.motivoRecusa,
+        });
+      } else if (data.status === 'AGUARDANDO_CORRECAO') {
+        dispararNotificacaoOcorrencia({
+          ocorrenciaId: id,
+          acao: 'AGUARDANDO_CORRECAO',
+          motivo: data.observacoesTriagem || updateData.observacoesTriagem,
+        });
+      }
     }
 
     return NextResponse.json(formatOccurrence(updated));

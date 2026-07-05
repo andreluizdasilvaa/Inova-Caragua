@@ -83,6 +83,8 @@ export const NovoAtivoView: React.FC<NovoAtivoViewProps> = ({
   const [showSuccess, setShowSuccess] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const [setores, setSetores] = useState<any[]>([]);
+
   const isMestre = userRole === 'MESTRE';
   const isEscola = userRole === 'ESCOLA';
 
@@ -99,6 +101,17 @@ export const NovoAtivoView: React.FC<NovoAtivoViewProps> = ({
   const selectedSchoolName = isEscola 
     ? (instituicaoNome || 'Minha Escola') 
     : (selectedSchool?.nome || '');
+
+  const resolvedInstituicaoId = isMestre ? instituicaoId : (propInstituicaoId || 'inst_padrao');
+
+  // Fetch setores whenever the active institution changes
+  useEffect(() => {
+    if (resolvedInstituicaoId && resolvedInstituicaoId !== 'inst_padrao') {
+      api.setores.list(resolvedInstituicaoId)
+        .then(data => setSetores(Array.isArray(data) ? data : []))
+        .catch(() => setSetores([]));
+    }
+  }, [resolvedInstituicaoId]);
 
   const filteredSchools = schools.filter((s: any) => 
     s.nome.toLowerCase().includes(schoolSearch.toLowerCase())
@@ -119,8 +132,10 @@ export const NovoAtivoView: React.FC<NovoAtivoViewProps> = ({
       newErrors.instituicaoId = 'Selecione a unidade escolar.';
     }
 
-    if (!localizacao.trim()) {
-      newErrors.localizacao = 'Informe a localização do ativo.';
+    if (setores.length > 0) {
+      if (!localizacao) newErrors.localizacao = 'Selecione um setor da instituição.';
+    } else {
+      if (!localizacao.trim()) newErrors.localizacao = 'Informe a localização do ativo.';
     }
 
     setErrors(newErrors);
@@ -130,8 +145,6 @@ export const NovoAtivoView: React.FC<NovoAtivoViewProps> = ({
     }
 
     setIsSubmitting(true);
-
-    const resolvedInstituicaoId = isMestre ? instituicaoId : (propInstituicaoId || 'inst_padrao');
 
     const newAsset: Asset = {
       id: isEditing && editingAsset ? editingAsset.id : (numeroPatrimonio.trim() || `PAT-${Date.now()}`),
@@ -322,22 +335,37 @@ export const NovoAtivoView: React.FC<NovoAtivoViewProps> = ({
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Localização do Ativo <span className="text-rose-500">*</span></label>
               <div className="relative">
-                <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input type="text" value={localizacao} onChange={(e) => { setLocalizacao(e.target.value); setShowLocalizacaoDropdown(true); }}
-                  onFocus={() => setShowLocalizacaoDropdown(true)} onBlur={() => setTimeout(() => setShowLocalizacaoDropdown(false), 200)}
-                  placeholder="Ex: Sala 1, Secretaria, Pátio..."
-                  className={`w-full text-sm rounded border bg-slate-50 pl-10 pr-3 py-2.5 outline-none focus:bg-white focus:ring-1 focus:ring-brand-blue transition-all font-semibold ${errors.localizacao ? 'border-rose-300 bg-rose-50' : 'border-slate-200'}`} />
-                {showLocalizacaoDropdown && localizacao && (
-                  <div className="absolute z-10 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                    {filteredLocalizacoes.length > 0 ? filteredLocalizacoes.map((loc) => (
-                      <button key={loc} onClick={() => { setLocalizacao(loc); setShowLocalizacaoDropdown(false); }}
-                        className="w-full text-left px-4 py-2.5 hover:bg-slate-50 border-b border-slate-100 last:border-b-0 transition-colors cursor-pointer">
-                        <span className="text-sm font-semibold text-slate-700">{loc}</span>
-                      </button>
-                    )) : (
-                      <div className="px-4 py-3 text-center text-sm text-slate-400">Digite uma localização personalizada</div>
+                {setores.length > 0 ? (
+                  <select
+                    value={localizacao}
+                    onChange={(e) => setLocalizacao(e.target.value)}
+                    className={`w-full text-sm rounded border bg-slate-50 px-3 py-2.5 outline-none focus:bg-white focus:ring-1 focus:ring-brand-blue transition-all font-semibold ${errors.localizacao ? 'border-rose-300 bg-rose-50' : 'border-slate-200'}`}
+                  >
+                    <option value="">Selecione um setor...</option>
+                    {setores.map(s => (
+                      <option key={s.id} value={s.id}>{s.nome}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <>
+                    <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input type="text" value={localizacao} onChange={(e) => { setLocalizacao(e.target.value); setShowLocalizacaoDropdown(true); }}
+                      onFocus={() => setShowLocalizacaoDropdown(true)} onBlur={() => setTimeout(() => setShowLocalizacaoDropdown(false), 200)}
+                      placeholder="Ex: Sala 1, Secretaria, Pátio..."
+                      className={`w-full text-sm rounded border bg-slate-50 pl-10 pr-3 py-2.5 outline-none focus:bg-white focus:ring-1 focus:ring-brand-blue transition-all font-semibold ${errors.localizacao ? 'border-rose-300 bg-rose-50' : 'border-slate-200'}`} />
+                    {showLocalizacaoDropdown && localizacao && (
+                      <div className="absolute z-10 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {filteredLocalizacoes.length > 0 ? filteredLocalizacoes.map((loc) => (
+                          <button key={loc} onClick={() => { setLocalizacao(loc); setShowLocalizacaoDropdown(false); }}
+                            className="w-full text-left px-4 py-2.5 hover:bg-slate-50 border-b border-slate-100 last:border-b-0 transition-colors cursor-pointer">
+                            <span className="text-sm font-semibold text-slate-700">{loc}</span>
+                          </button>
+                        )) : (
+                          <div className="px-4 py-3 text-center text-sm text-slate-400">Digite uma localização personalizada</div>
+                        )}
+                      </div>
                     )}
-                  </div>
+                  </>
                 )}
               </div>
               {errors.localizacao && <p className="text-xs font-bold text-rose-600 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" />{errors.localizacao}</p>}

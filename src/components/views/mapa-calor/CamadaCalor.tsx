@@ -44,10 +44,10 @@ export function CamadaCalor({ pontos, raio, opacidade }: CamadaCalorProps) {
       },
     });
 
-    heat.addTo(map);
+    (heat as any).addTo(map);
 
     return () => {
-      map.removeLayer(heat);
+      map.removeLayer(heat as any);
     };
   }, [map, pontos, raio, opacidade]);
 

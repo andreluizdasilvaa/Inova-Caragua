@@ -295,7 +295,7 @@ async function main() {
             }
         })
 
-        await prisma.item.createMany({ data: itensData })
+        await prisma.item.createMany({ data: itensData as any })
 
         const hotspot = index % 8 === 0
         const quantidadeOcorrencias = hotspot ? 24 + (seedBase % 8) : 6 + (seedBase % 10)

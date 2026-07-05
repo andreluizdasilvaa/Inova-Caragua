@@ -4,6 +4,7 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { Asset, CategoriaItem, EstadoConservacao, StatusItem } from '@/types';
 import { api } from '@/lib/api';
 import { Card, Button } from '@/components/UI';
+import * as XLSX from 'xlsx';
 import { 
   ArrowLeft, 
   Settings, 
@@ -159,9 +160,7 @@ const INSTRUCTIONS_DATA = [
   ['Observações', 'NÃO', 'Informações adicionais', 'Texto livre'],
 ];
 
-async function generateXlsxTemplate() {
-  const XLSX = (await import('xlsx')).default;
-
+function generateXlsxTemplate() {
   const wb = XLSX.utils.book_new();
 
   // Instructions sheet
@@ -339,7 +338,6 @@ async function parseFile(file: File): Promise<ParsedRow[]> {
 }
 
 async function parseXlsx(file: File): Promise<ParsedRow[]> {
-  const XLSX = (await import('xlsx')).default;
   const buffer = await file.arrayBuffer();
   const wb = XLSX.read(buffer, { type: 'array', cellDates: true });
 

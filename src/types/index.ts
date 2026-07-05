@@ -113,3 +113,10 @@ export interface SchoolStats {
   openCount: number;
   similarCases30d: number;
 }
+
+export interface PaginationInfo {
+  page: number;
+  limit: number;
+  totalCount: number;
+  totalPages: number;
+}

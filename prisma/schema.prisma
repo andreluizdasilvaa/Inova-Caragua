@@ -149,6 +149,7 @@ model Instituicao {
     usuarios    Usuario[]
     setores     Setor[]
     ocorrencias Ocorrencia[]
+    itens       Item[]
 
     @@index([ativo])
 }
@@ -191,8 +192,11 @@ model Item {
     createdAt         DateTime          @default(now())
     updatedAt         DateTime          @updatedAt
 
-    setorId String
-    setor   Setor  @relation(fields: [setorId], references: [id])
+    setorId String?
+    setor   Setor?  @relation(fields: [setorId], references: [id])
+
+    instituicaoId String?
+    instituicao   Instituicao? @relation(fields: [instituicaoId], references: [id])
 
     cadastradoPorId String?
     cadastradoPor   Usuario? @relation(fields: [cadastradoPorId], references: [id], onDelete: SetNull)
@@ -200,6 +204,7 @@ model Item {
     ocorrencias Ocorrencia[]
 
     @@index([setorId])
+    @@index([instituicaoId])
     @@index([categoria])
     @@index([status])
 }

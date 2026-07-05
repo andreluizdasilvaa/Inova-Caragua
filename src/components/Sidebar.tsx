@@ -34,6 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'inventario', label: 'Inventário', icon: Package },
     { id: 'ocorrencias', label: 'Ocorrências', icon: AlertTriangle },
     { id: 'triagem', label: 'Triagem / Monitoramento', icon: Eye },
+    { id: 'aprovacao', label: 'Aprovação', icon: ShieldAlert },
     { id: 'lote', label: 'Lote / Cadastro', icon: ShieldAlert },
     // Visível apenas para MESTRE
     ...(papel === 'MESTRE' ? [{ id: 'mapa-calor', label: 'Mapa de Calor', icon: Flame }] : []),

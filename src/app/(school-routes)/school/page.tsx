@@ -10,6 +10,7 @@ import { OcorrenciasView } from '@/components/views/OcorrenciasView';
 import { LoteView } from '@/components/views/LoteView';
 import { DetalhesView } from '@/components/views/DetalhesView';
 import { NovaOcorrenciaView } from '@/components/views/NovaOcorrenciaView';
+import { NovoAtivoView } from '@/components/views/NovoAtivoView';
 import { signOut, useSession } from 'next-auth/react';
 
 function LoadingSpinner() {
@@ -29,6 +30,9 @@ export default function SchoolPage() {
   // Active View Router - must come before early return
   const [currentView, setView] = useState<string>('dashboard');
 
+  // Local state for occurrences (to allow priority editing)
+  const [schoolOccurrencesState, setSchoolOccurrences] = useState<Occurrence[]>([]);
+  
   // Selected detail items
   const [selectedOccurrence, setSelectedOccurrence] = useState<Occurrence | null>(null);
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
@@ -45,6 +49,13 @@ export default function SchoolPage() {
     if (!instituicaoId) return [];
     return mockOccurrences.filter(o => o.instituicaoId === instituicaoId);
   }, [instituicaoId]);
+
+  // Sync local state with filtered data
+  React.useEffect(() => {
+    if (schoolOccurrences.length > 0 && schoolOccurrencesState.length === 0) {
+      setSchoolOccurrences(schoolOccurrences);
+    }
+  }, [schoolOccurrences, schoolOccurrencesState.length]);
 
   const schoolAssets = useMemo<Asset[]>(() => {
     if (!instituicaoId) return [];
@@ -72,6 +83,10 @@ export default function SchoolPage() {
   };
 
   const handleRegisterOccurrence = (occurrence: Occurrence) => {
+    // In a real app, this would be saved to the DB
+  };
+
+  const handleRegisterAsset = (asset: Asset) => {
     // In a real app, this would be saved to the DB
   };
 
@@ -123,9 +138,13 @@ export default function SchoolPage() {
 
             {currentView === 'ocorrencias' && (
               <OcorrenciasView
-                occurrences={schoolOccurrences}
+                occurrences={schoolOccurrencesState.length > 0 ? schoolOccurrencesState : schoolOccurrences}
                 setView={handleSetView}
                 setSelectedOccurrence={setSelectedOccurrence}
+                onUpdateOccurrence={(updated) => {
+                  setSchoolOccurrences((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+                }}
+                canEditOwn={true}
               />
             )}
 
@@ -143,6 +162,8 @@ export default function SchoolPage() {
                 setView={handleSetView}
                 onGenerateBatch={handleGenerateBatch}
                 instituicaoId={instituicaoId || undefined}
+                userRole="ESCOLA"
+                instituicaoNome={schoolInfo?.nomeInstituicao}
               />
             )}
 
@@ -159,6 +180,18 @@ export default function SchoolPage() {
                 occurrences={schoolOccurrences}
                 setView={handleSetView}
                 onRegisterOccurrence={handleRegisterOccurrence}
+                editingOccurrence={selectedOccurrence}
+              />
+            )}
+
+            {currentView === 'novo-ativo' && (
+              <NovoAtivoView
+                setView={handleSetView}
+                onRegisterAsset={handleRegisterAsset}
+                userRole="ESCOLA"
+                instituicaoId={instituicaoId || undefined}
+                instituicaoNome={schoolInfo?.nomeInstituicao}
+                editingAsset={selectedAsset}
               />
             )}
           </div>

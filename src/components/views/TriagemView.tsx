@@ -14,7 +14,11 @@ import {
   FileText,
   Gavel,
   Reply,
-  Calendar
+  Calendar,
+  Image as ImageIcon,
+  ChevronLeft,
+  ChevronRight,
+  X
 } from 'lucide-react';
 import { mockAssetHistory, mockSchoolStats } from '@/mockData';
 
@@ -218,6 +222,30 @@ export const TriagemView: React.FC<TriagemViewProps> = ({
                     &ldquo;{currentOcc.descricao}&rdquo;
                   </div>
 
+                  {/* Image Gallery - mostra se a ocorrência tiver imagens */}
+                  {currentOcc.imagens && currentOcc.imagens.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1.5">
+                        <ImageIcon className="w-3.5 h-3.5 text-brand-blue" />
+                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                          Imagens Anexadas ({currentOcc.imagens.length})
+                        </span>
+                      </div>
+                      <div className="flex gap-2 overflow-x-auto pb-1">
+                        {currentOcc.imagens.map((imgUrl, idx) => (
+                          <div key={idx} className="shrink-0">
+                            <img
+                              src={imgUrl}
+                              alt={`Imagem ${idx + 1} da ocorrência`}
+                              className="w-28 h-20 object-cover rounded-lg border border-slate-200 bg-slate-100 cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => window.open(imgUrl, '_blank')}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100 shrink-0">
                     <div>
                       <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Tipo</span>
@@ -314,20 +342,18 @@ export const TriagemView: React.FC<TriagemViewProps> = ({
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
                       1. Definir Nível de Prioridade
                     </label>
-                    <div className="grid grid-cols-4 gap-2">
-                      {(['BAIXA', 'MEDIA', 'ALTA', 'URGENTE'] as Prioridade[]).map((p) => {
+                    <div className="grid grid-cols-3 gap-2">
+                      {(['BAIXA', 'MEDIA', 'ALTA'] as Prioridade[]).map((p) => {
                         const active = triagePriority === p;
                         const colors: Record<string, string> = {
                           BAIXA: active ? 'bg-slate-100 border-slate-400 text-slate-800' : 'bg-white border-slate-200 text-slate-500',
                           MEDIA: active ? 'bg-amber-100 border-amber-400 text-amber-800 font-extrabold' : 'bg-white border-slate-200 text-slate-500',
                           ALTA: active ? 'bg-red-100 border-red-400 text-red-800 font-extrabold' : 'bg-white border-slate-200 text-slate-500',
-                          URGENTE: active ? 'bg-rose-100 border-rose-400 text-rose-800 font-extrabold' : 'bg-white border-slate-200 text-slate-500',
                         };
                         const labels: Record<string, string> = {
                           BAIXA: 'Baixa',
                           MEDIA: 'Média',
                           ALTA: 'Alta',
-                          URGENTE: 'Urgente',
                         };
                         return (
                           <button

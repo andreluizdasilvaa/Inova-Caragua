@@ -1,4 +1,4 @@
-import { Occurrence, Asset, AssetHistory, SchoolStats } from './types';
+import { Occurrence, Asset, OccurrenceHistory, SchoolStats } from './types';
 
 export const mockOccurrences: Occurrence[] = [
   {
@@ -173,7 +173,6 @@ export const mockAssets: Asset[] = [
     createdAt: new Date('2023-03-15T08:00:00.000Z'),
     updatedAt: new Date('2023-03-15T08:00:00.000Z'),
     setorId: 'setor_biblioteca',
-    instituicaoId: 'inst_central_high',
     cadastradoPorId: 'user_mestre'
   },
   {
@@ -192,7 +191,6 @@ export const mockAssets: Asset[] = [
     createdAt: new Date('2023-05-10T08:00:00.000Z'),
     updatedAt: new Date('2023-05-10T08:00:00.000Z'),
     setorId: 'setor_sala12',
-    instituicaoId: 'cmr6vwyqj0002w8vpvnzxa02s',
     cadastradoPorId: 'user_mestre'
   },
   {
@@ -211,7 +209,6 @@ export const mockAssets: Asset[] = [
     createdAt: new Date('2022-10-12T08:00:00.000Z'),
     updatedAt: new Date('2022-10-12T08:00:00.000Z'),
     setorId: 'setor_laboratorio',
-    instituicaoId: 'cmr6vwyqj0002w8vpvnzxa02s',
     cadastradoPorId: 'user_mestre'
   },
   {
@@ -230,7 +227,6 @@ export const mockAssets: Asset[] = [
     createdAt: new Date('2024-01-22T08:00:00.000Z'),
     updatedAt: new Date('2024-01-22T08:00:00.000Z'),
     setorId: 'setor_patio',
-    instituicaoId: 'inst_cora_coralina',
     cadastradoPorId: 'user_mestre'
   },
   {
@@ -249,12 +245,11 @@ export const mockAssets: Asset[] = [
     createdAt: new Date('2021-06-14T08:00:00.000Z'),
     updatedAt: new Date('2021-06-14T08:00:00.000Z'),
     setorId: 'setor_corredor_a',
-    instituicaoId: 'inst_monteiro_lobato',
     cadastradoPorId: 'user_mestre'
   }
 ];
 
-export const mockAssetHistory: Record<string, AssetHistory[]> = {
+export const mockAssetHistory: Record<string, OccurrenceHistory[]> = {
   'PAT-2023-001': [
     {
       id: 'hist_1',

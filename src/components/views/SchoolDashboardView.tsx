@@ -70,6 +70,13 @@ export const SchoolDashboardView: React.FC<SchoolDashboardViewProps> = ({
     return [...schoolOccurrences].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [schoolOccurrences]);
 
+  const recentProblems = useMemo(() => {
+
+    return recentOccurrences.filter(o => 
+      o.status !== 'CONCLUIDA'
+    ).slice(0, 10);
+  }, [recentOccurrences]);
+
   const criticalAssets = useMemo(() => {
     return schoolAssets.filter(a => 
       CATEGORIA_CRITICA.includes(a.categoria) && a.status !== 'BAIXADO'

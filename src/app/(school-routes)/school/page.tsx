@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Occurrence, Asset, mockOccurrences, mockAssets, mockSchoolStats } from '@/mockData';
+import { Occurrence, Asset } from '@/types';
+import { mockOccurrences, mockAssets, mockSchoolStats } from '@/mockData';
 import { SchoolSidebar } from '@/components/SchoolSidebar';
 import { Header } from '@/components/Header';
 import { SchoolDashboardView } from '@/components/views/SchoolDashboardView';
@@ -39,6 +40,13 @@ export default function SchoolPage() {
 
   // Mobile sidebar visibility
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const schoolOccurrences = useMemo(() => {
+    if (schoolOccurrencesState.length > 0) {
+      return schoolOccurrencesState;
+    }
+    return mockOccurrences;
+  }, [schoolOccurrencesState]);
 
   // All hooks must be called before any conditional return
   // Get the user's instituicaoId from session

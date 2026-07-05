@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
-import { Asset, Occurrence, TipoSolicitacao, Prioridade } from '@/mockData';
+import { Asset, Occurrence, TipoSolicitacao, Prioridade } from '@/types';
 import { Card, Button, TIPO_SOLICITACAO_LABEL } from '@/components/UI';
 import { 
   ArrowLeft, 
@@ -81,6 +81,7 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
   // Pre-fill form when editing
   useEffect(() => {
     if (isEditing && editingOccurrence) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTitle(editingOccurrence.titulo);
       setDescription(editingOccurrence.descricao);
       setLocalizacao(editingOccurrence.localizacaoDescricao || '');
@@ -179,9 +180,9 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
     setIsSubmitting(true);
     
     // Extrai as URLs de preview das imagens anexadas
-    const imageUrls = attachedFiles
-      .filter(f => f.preview)
-      .map(f => f.preview as string);
+    // const imageUrls = attachedFiles
+    //   .filter(f => f.preview)
+    //   .map(f => f.preview as string);
 
     const newOccurrence: Occurrence = {
       id: isEditing && editingOccurrence ? editingOccurrence.id : `occ_${Date.now()}`,
@@ -193,7 +194,17 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
       prioridade: isEditing && editingOccurrence ? editingOccurrence.prioridade : (canEditPriority ? priority : null),
       localizacaoDescricao: localizacao.trim(),
       numeroPatrimonioTexto: selectedAsset?.numeroPatrimonio || null,
-      imagens: imageUrls.length > 0 ? imageUrls : (isEditing && editingOccurrence?.imagens ? editingOccurrence.imagens : null),
+      anexos: attachedFiles.map((file, idx) => ({
+        id: `anexo_${Date.now()}_${idx}`,
+        tipo: 'FOTO_OCORRENCIA',
+        url: file.preview || '',
+        nomeArquivo: file.name,
+        mimeType: file.type,
+        tamanhoBytes: file.size,
+        createdAt: new Date(),
+        ocorrenciaId: isEditing && editingOccurrence ? editingOccurrence.id : null,
+        enviadoPorId: 'user_atual',
+      })),
       observacoesTriagem: isEditing && editingOccurrence ? editingOccurrence.observacoesTriagem : null,
       observacoesMestre: isEditing && editingOccurrence ? editingOccurrence.observacoesMestre : null,
       motivoRecusa: isEditing && editingOccurrence ? editingOccurrence.motivoRecusa : null,

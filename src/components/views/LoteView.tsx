@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Asset, CategoriaItem, EstadoConservacao, StatusItem, mockSchoolStats } from '@/mockData';
+import { Asset, CategoriaItem, EstadoConservacao, StatusItem } from '@/types';
+import { mockSchoolStats } from '@/mockData';
 import { Card, Button } from '@/components/UI';
 import { 
   ArrowLeft, 

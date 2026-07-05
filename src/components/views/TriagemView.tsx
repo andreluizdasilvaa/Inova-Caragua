@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Occurrence, AssetHistory, SchoolStats, Prioridade, StatusOcorrencia, TipoSolicitacao } from '@/mockData';
+import { Occurrence, SchoolStats, Prioridade, StatusOcorrencia, TipoSolicitacao } from '@/types';
+import { OccurrenceHistory } from '@/types';
 import { Card, Button, PriorityBadge, StatusBadge, STATUS_OCORRENCIA_LABEL } from '@/components/UI';
 import { 
   MapPin, 
@@ -72,7 +73,7 @@ export const TriagemView: React.FC<TriagemViewProps> = ({
   }, [currentOcc]);
 
   // Fetch asset histories dynamically
-  const assetHistoryList = useMemo<AssetHistory[]>(() => {
+  const assetHistoryList = useMemo<OccurrenceHistory[]>(() => {
     if (!currentOcc || !currentOcc.itemId) return [];
     const key = currentOcc.itemId.replace('#', '').trim();
     return mockAssetHistory[key] || [];
@@ -223,22 +224,24 @@ export const TriagemView: React.FC<TriagemViewProps> = ({
                   </div>
 
                   {/* Image Gallery - mostra se a ocorrência tiver imagens */}
-                  {currentOcc.imagens && currentOcc.imagens.length > 0 && (
+
+                  {currentOcc.anexos && currentOcc.anexos.length > 0 && (
                     <div className="space-y-2">
                       <div className="flex items-center gap-1.5">
                         <ImageIcon className="w-3.5 h-3.5 text-brand-blue" />
                         <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                          Imagens Anexadas ({currentOcc.imagens.length})
+                        
+                          Imagens da Ocorrência ({currentOcc.anexos.length})
+
                         </span>
                       </div>
                       <div className="flex gap-2 overflow-x-auto pb-1">
-                        {currentOcc.imagens.map((imgUrl, idx) => (
-                          <div key={idx} className="shrink-0">
+                        {currentOcc.anexos.map((anexo) => (
+                          <div key={anexo.id} className="flex-shrink-0 w-24 h-24 border border-slate-200 rounded overflow-hidden relative">
                             <img
-                              src={imgUrl}
-                              alt={`Imagem ${idx + 1} da ocorrência`}
-                              className="w-28 h-20 object-cover rounded-lg border border-slate-200 bg-slate-100 cursor-pointer hover:opacity-80 transition-opacity"
-                              onClick={() => window.open(imgUrl, '_blank')}
+                              src={anexo.url}
+                              alt={anexo.nomeArquivo}
+                              className="w-full h-full object-cover"
                             />
                           </div>
                         ))}

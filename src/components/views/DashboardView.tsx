@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Occurrence, Asset, CategoriaItem } from '@/mockData';
+import { Occurrence, Asset, CategoriaItem } from '@/types';
 import { StatsCard, Card, Button } from '@/components/UI';
 import { 
   AlertTriangle, 

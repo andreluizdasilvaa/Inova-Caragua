@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Asset, CategoriaItem, EstadoConservacao, StatusItem } from '@/mockData';
+import { Asset, CategoriaItem, EstadoConservacao, StatusItem } from '@/types';
 import { Card, Button, AssetStatusBadge } from '@/components/UI';
 import { Search, Plus, ListPlus, Eye, FileSpreadsheet } from 'lucide-react';
 

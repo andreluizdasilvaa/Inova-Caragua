@@ -1,5 +1,5 @@
 import React from 'react';
-import { Prioridade, StatusOcorrencia, StatusItem, EstadoConservacao } from '@/mockData';
+import { Prioridade, StatusOcorrencia, StatusItem, EstadoConservacao } from '@/types';
 import { AlertTriangle, CheckCircle, Clock, Info, XCircle, CalendarCheck, Ban, ArrowLeftRight } from 'lucide-react';
 
 // Card primitive conforming to design guidelines (Level 1 elevation: no shadow, clean outline)

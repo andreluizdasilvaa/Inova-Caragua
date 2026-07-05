@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Occurrence, StatusOcorrencia, Prioridade, TipoSolicitacao, mockSchoolStats } from '@/mockData';
+import { Occurrence, StatusOcorrencia, Prioridade, TipoSolicitacao } from '@/types';
+import { mockSchoolStats } from '@/mockData';
 import { Card, Button, PriorityBadge, StatusBadge, TIPO_SOLICITACAO_LABEL, STATUS_OCORRENCIA_LABEL } from '@/components/UI';
 import { 
   Search, 
@@ -97,7 +98,7 @@ export const AprovacaoView: React.FC<AprovacaoViewProps> = ({
   };
 
   const filteredOccurrences = useMemo(() => {
-    let result = occurrences.filter((occ) => {
+    const result = occurrences.filter((occ) => {
       const q = searchQuery.toLowerCase();
       const matchesSearch = 
         !q ||

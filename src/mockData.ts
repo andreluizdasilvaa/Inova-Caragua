@@ -18,7 +18,20 @@ export const mockOccurrences: Occurrence[] = [
     itemId: null,
     criadoPorId: 'user_ana_diretora',
     triagemPorId: null,
-    aprovadoPorId: null
+    aprovadoPorId: null,
+    anexos: [
+      {
+        id: 'att_001',
+        tipo: 'FOTO_OCORRENCIA',
+        url: 'https://example.com/images/vazamento_banheiro.jpg',
+        nomeArquivo: 'vazamento_banheiro.jpg',
+        mimeType: 'image/jpeg',
+        tamanhoBytes: 204800,
+        createdAt: new Date('2023-10-24T08:35:00.000Z'),
+        ocorrenciaId: 'cm1234567890occ1',
+        enviadoPorId: 'user_ana_diretora'
+      }
+    ]
   },
   {
     id: 'cm1234567890occ2',
@@ -173,7 +186,8 @@ export const mockAssets: Asset[] = [
     createdAt: new Date('2023-03-15T08:00:00.000Z'),
     updatedAt: new Date('2023-03-15T08:00:00.000Z'),
     setorId: 'setor_biblioteca',
-    cadastradoPorId: 'user_mestre'
+    cadastradoPorId: 'user_mestre',
+    instituicaoId: 'cmr6vwyqj0002w8vpvnzxa02s'
   },
   {
     id: 'PAT-2023-089',
@@ -191,7 +205,8 @@ export const mockAssets: Asset[] = [
     createdAt: new Date('2023-05-10T08:00:00.000Z'),
     updatedAt: new Date('2023-05-10T08:00:00.000Z'),
     setorId: 'setor_sala12',
-    cadastradoPorId: 'user_mestre'
+    cadastradoPorId: 'user_mestre',
+    instituicaoId: 'cmr6vwyqj0002w8vpvnzxa02s'
   },
   {
     id: 'PAT-2022-402',
@@ -209,7 +224,8 @@ export const mockAssets: Asset[] = [
     createdAt: new Date('2022-10-12T08:00:00.000Z'),
     updatedAt: new Date('2022-10-12T08:00:00.000Z'),
     setorId: 'setor_laboratorio',
-    cadastradoPorId: 'user_mestre'
+    cadastradoPorId: 'user_mestre',
+    instituicaoId: 'cmr6vwyqj0002w8vpvnzxa02s'
   },
   {
     id: 'PAT-2024-118',
@@ -227,7 +243,8 @@ export const mockAssets: Asset[] = [
     createdAt: new Date('2024-01-22T08:00:00.000Z'),
     updatedAt: new Date('2024-01-22T08:00:00.000Z'),
     setorId: 'setor_patio',
-    cadastradoPorId: 'user_mestre'
+    cadastradoPorId: 'user_mestre',
+    instituicaoId: 'inst_cora_coralina'
   },
   {
     id: 'PAT-2021-992',
@@ -245,7 +262,8 @@ export const mockAssets: Asset[] = [
     createdAt: new Date('2021-06-14T08:00:00.000Z'),
     updatedAt: new Date('2021-06-14T08:00:00.000Z'),
     setorId: 'setor_corredor_a',
-    cadastradoPorId: 'user_mestre'
+    cadastradoPorId: 'user_mestre',
+    instituicaoId: 'cmr6vwyqj0002w8vpvnzxa02s'
   }
 ];
 

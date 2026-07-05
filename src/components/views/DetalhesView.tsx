@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { Asset, AssetHistory, CategoriaItem, EstadoConservacao, StatusItem } from '@/mockData';
+import { Asset, CategoriaItem, EstadoConservacao, StatusItem } from '@/types';
+import { OccurrenceHistory } from '@/types';
 import { Card, Button, AssetStatusBadge, STATUS_ITEM_LABEL } from '@/components/UI';
 import { 
   ArrowLeft, 
@@ -48,23 +49,16 @@ export const DetalhesView: React.FC<DetalhesViewProps> = ({
 
   // Safe fallback if null
   const currentAsset: Asset = asset || {
-    id: 'PAT-2023-001',
-    nome: 'Ar Condicionado 12000 BTUs',
-    categoria: 'INFORMATICA',
-    numeroPatrimonio: 'PAT-2023-001',
-    numeroSerie: 'CSL-9982-XYZ-44',
-    marca: 'Consul',
-    modelo: 'Split Hi-Wall Eco',
-    estadoConservacao: 'BOM',
+    id: 'N/A',
+    nome: 'Ativo Desconhecido',
+    numeroPatrimonio: null,
+    categoria: 'OUTRO',
+    estadoConservacao: 'REGULAR',
     status: 'ATIVO',
-    dataAquisicao: new Date('2023-03-15T00:00:00.000Z'),
-    valorAquisicao: 2500.00,
-    observacoes: 'Fornecedor: Refrigeração Total Ltda',
-    createdAt: new Date('2023-03-15T08:00:00.000Z'),
-    updatedAt: new Date('2023-03-15T08:00:00.000Z'),
-    setorId: 'setor_biblioteca',
-    instituicaoId: 'inst_central_high',
-    cadastradoPorId: 'user_mestre'
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    setorId: 'N/A',
+    instituicaoId: 'N/A'
   };
 
   const triggerToast = (msg: string) => {
@@ -80,7 +74,7 @@ export const DetalhesView: React.FC<DetalhesViewProps> = ({
   };
 
   // Get asset history list
-  const historyList = useMemo<AssetHistory[]>(() => {
+  const historyList = useMemo<OccurrenceHistory[]>(() => {
     const key = currentAsset.id.replace('#', '').trim();
     return mockAssetHistory[key] || [];
   }, [currentAsset]);

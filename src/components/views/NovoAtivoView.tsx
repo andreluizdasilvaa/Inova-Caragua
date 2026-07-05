@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { Asset, CategoriaItem, StatusItem, EstadoConservacao, mockSchoolStats } from '@/mockData';
+import { Asset, CategoriaItem, StatusItem, EstadoConservacao } from '@/types';
+import { mockSchoolStats } from '@/mockData';
 import { Card, Button } from '@/components/UI';
 import { 
   ArrowLeft, 

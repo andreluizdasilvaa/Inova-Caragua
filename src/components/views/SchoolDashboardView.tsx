@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Occurrence, Asset, Prioridade, StatusOcorrencia, StatusItem, CategoriaItem } from '@/mockData';
+import { Occurrence, Asset, Prioridade, StatusOcorrencia, StatusItem, CategoriaItem } from '@/types';
 import { Card } from '@/components/UI';
 import { 
   CheckCircle, 

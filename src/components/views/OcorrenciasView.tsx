@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Occurrence, StatusOcorrencia, Prioridade, TipoSolicitacao } from '@/mockData';
+import { Occurrence, StatusOcorrencia, Prioridade, TipoSolicitacao } from '@/types';
 import { Card, Button, PriorityBadge, StatusBadge, TIPO_SOLICITACAO_LABEL } from '@/components/UI';
 import { Search, Edit, SlidersHorizontal, Calendar, Clock } from 'lucide-react';
 

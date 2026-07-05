@@ -8,10 +8,10 @@ import {
   TipoSolicitacao, 
   Prioridade, 
   StatusOcorrencia, 
-  TipoAnexo 
+  TipoAnexo
 } from '../generated/client';
 
-export type { 
+export { 
   Papel, 
   CargoEscolar, 
   TipoInstituicao,
@@ -35,6 +35,18 @@ export interface UserSession {
   };
 }
 
+export interface Attachment {
+  id: string,
+  tipo: TipoAnexo,
+  url: string,
+  nomeArquivo: string,
+  mimeType: string,
+  tamanhoBytes: number,
+  createdAt: Date,
+  ocorrenciaId?: string | null,
+  enviadoPorId: string,
+}
+
 export interface Occurrence {
   id: string;
   numero: number;
@@ -56,6 +68,7 @@ export interface Occurrence {
   dataAprovacao?: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  anexos?: Attachment[];
   instituicaoId: string;
   setorId?: string | null;
   itemId?: string | null;
@@ -79,6 +92,7 @@ export interface Asset {
   observacoes?: string | null;
   createdAt: Date;
   updatedAt: Date;
+  instituicaoId: string;
   setorId: string;
   cadastradoPorId?: string | null;
 }

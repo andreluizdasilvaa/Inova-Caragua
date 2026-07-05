@@ -102,9 +102,26 @@ export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
 
   const canEdit = canEditOwn || canEditPriority;
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  const totalPages = Math.ceil(filteredOccurrences.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedOccurrences = filteredOccurrences.slice(startIndex, startIndex + itemsPerPage);
+
+  // Reset page when filters or items per page change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedPriority, selectedStatus, selectedTipo, itemsPerPage]);
+
   const handleEditClick = (occ: Occurrence) => {
     setSelectedOccurrence(occ);
     setView('nova-ocorrencia');
+  };
+
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
   };
 
   return (
@@ -212,8 +229,8 @@ export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm font-semibold text-slate-600">
-              {filteredOccurrences.length > 0 ? (
-                filteredOccurrences.map((occ) => (
+              {paginatedOccurrences.length > 0 ? (
+                paginatedOccurrences.map((occ) => (
                   <tr 
                     key={occ.id} 
                     className="hover:bg-slate-50/70 transition-colors duration-150"
@@ -273,17 +290,60 @@ export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
         </div>
 
         <div className="bg-slate-50 border-t border-slate-200 px-4 py-3 flex items-center justify-between text-xs font-bold text-slate-500">
-          <span>
-            Mostrando 1 a {filteredOccurrences.length} de {filteredOccurrences.length} entradas
-          </span>
+          <div className="flex items-center gap-3">
+            <span>
+              Mostrando {filteredOccurrences.length > 0 ? startIndex + 1 : 0} a {Math.min(startIndex + itemsPerPage, filteredOccurrences.length)} de {filteredOccurrences.length} entradas
+            </span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => setItemsPerPage(Number(e.target.value))}
+              className="text-xs border border-slate-200 rounded px-2 py-1 bg-white font-semibold text-slate-700 outline-none focus:ring-1 focus:ring-brand-blue"
+            >
+              <option value="10">10 por página</option>
+              <option value="20">20 por página</option>
+            </select>
+          </div>
           <div className="flex gap-1">
-            <button disabled className="px-3 py-1.5 rounded border border-slate-200 bg-white hover:bg-slate-50 transition-colors disabled:opacity-40">
+            <button
+              onClick={() => goToPage(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="px-3 py-1.5 rounded border border-slate-200 bg-white hover:bg-slate-50 transition-colors disabled:opacity-40"
+            >
               Anterior
             </button>
-            <button className="px-3 py-1.5 rounded border border-brand-blue bg-brand-blue text-white font-bold">
-              1
-            </button>
-            <button disabled className="px-3 py-1.5 rounded border border-slate-200 bg-white hover:bg-slate-50 transition-colors disabled:opacity-40">
+            
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+              let pageNum: number;
+              if (totalPages <= 5) {
+                pageNum = i + 1;
+              } else if (currentPage <= 3) {
+                pageNum = i + 1;
+              } else if (currentPage >= totalPages - 2) {
+                pageNum = totalPages - 4 + i;
+              } else {
+                pageNum = currentPage - 2 + i;
+              }
+              
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => goToPage(pageNum)}
+                  className={`px-3 py-1.5 rounded border transition-colors ${
+                    currentPage === pageNum
+                      ? 'border-brand-blue bg-brand-blue text-white font-bold'
+                      : 'border-slate-200 bg-white hover:bg-slate-50'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+            
+            <button
+              onClick={() => goToPage(currentPage + 1)}
+              disabled={currentPage === totalPages || totalPages === 0}
+              className="px-3 py-1.5 rounded border border-slate-200 bg-white hover:bg-slate-50 transition-colors disabled:opacity-40"
+            >
               Próximo
             </button>
           </div>

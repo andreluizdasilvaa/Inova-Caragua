@@ -49,14 +49,18 @@ export default function SchoolPage() {
 
     setLoading(true);
     try {
-      const [occResult, instResult] = await Promise.all([
+      const [occResult, instResult, itemsResult] = await Promise.all([
         api.occurrences.list({ instituicaoId }),
         api.instituicoes.list(),
+        api.items.list({ instituicaoId, limit: 9999 }),
       ]);
 
       const occurrences = Array.isArray(occResult) ? occResult : (occResult as any).data || [];
-
       setSchoolOccurrences(occurrences);
+
+      // Parse items
+      const itemsList = Array.isArray(itemsResult) ? itemsResult : (itemsResult?.data || []);
+      setSchoolAssets(itemsList);
 
       // Find school name
       const instList = Array.isArray(instResult) ? instResult : [];

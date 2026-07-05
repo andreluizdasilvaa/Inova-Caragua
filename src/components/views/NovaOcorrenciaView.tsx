@@ -155,7 +155,7 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [title, description, localizacao]);
+  }, [title, description, localizacao, selectedSetorId, setores]);
 
   const handleSelectAsset = (asset: Asset) => {
     setSelectedAsset(asset);
@@ -272,11 +272,12 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
       aprovadoPorId: isEditing && editingOccurrence ? editingOccurrence.aprovadoPorId : null,
     };
     
-    setView('ocorrencias');
+    onRegisterOccurrence(newOccurrence);
+    
     setTimeout(() => {
-      onRegisterOccurrence(newOccurrence);
       setIsSubmitting(false);
       setShowSuccess(true);
+      setView('ocorrencias');
       setTimeout(() => {
         setShowSuccess(false);
       }, 2000);

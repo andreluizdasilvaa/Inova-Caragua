@@ -188,80 +188,82 @@ export const NovoAtivoView: React.FC<NovoAtivoViewProps> = ({
 
           {/* 0. UNIDADE ESCOLAR (apenas para MESTRE) */}
           {isMestre && (
-            <Card className="p-5 space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                <School className="w-4 h-4 text-brand-blue" />
-                <h3 className="text-sm font-bold text-slate-800">Unidade Escolar</h3>
-              </div>
+            <div className="bg-white border border-slate-200/80 rounded-lg">
+              <div className="p-5 space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                  <School className="w-4 h-4 text-brand-blue" />
+                  <h3 className="text-sm font-bold text-slate-800">Unidade Escolar</h3>
+                </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-                  Selecione a Escola <span className="text-rose-500">*</span>
-                </label>
-                <div className="relative">
-                  <School className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 z-10" />
-                  <input
-                    type="text"
-                    readOnly
-                    value={selectedSchoolName}
-                    onFocus={() => setShowSchoolDropdown(true)}
-                    placeholder="Clique para selecionar uma escola..."
-                    className={`w-full text-sm rounded border bg-slate-50 pl-10 pr-10 py-2.5 outline-none focus:bg-white focus:ring-1 focus:ring-brand-blue transition-all font-semibold cursor-pointer ${
-                      errors.instituicaoId ? 'border-rose-300 bg-rose-50' : 'border-slate-200'
-                    }`}
-                  />
-                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                    Selecione a Escola <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <School className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 z-10" />
+                    <input
+                      type="text"
+                      readOnly
+                      value={selectedSchoolName}
+                      onFocus={() => setShowSchoolDropdown(true)}
+                      placeholder="Clique para selecionar uma escola..."
+                      className={`w-full text-sm rounded border bg-slate-50 pl-10 pr-10 py-2.5 outline-none focus:bg-white focus:ring-1 focus:ring-brand-blue transition-all font-semibold cursor-pointer ${
+                        errors.instituicaoId ? 'border-rose-300 bg-rose-50' : 'border-slate-200'
+                      }`}
+                    />
+                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
 
-                  {showSchoolDropdown && (
-                    <div className="absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden">
-                      {/* Search dentro do dropdown */}
-                      <div className="p-2 border-b border-slate-100">
-                        <div className="relative">
-                          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                          <input
-                            type="text"
-                            value={schoolSearch}
-                            onChange={(e) => setSchoolSearch(e.target.value)}
-                            placeholder="Buscar escola..."
-                            className="w-full text-xs rounded border border-slate-200 bg-slate-50 pl-8 pr-2 py-1.5 outline-none focus:ring-1 focus:ring-brand-blue font-medium"
-                            autoFocus
-                          />
+                    {showSchoolDropdown && (
+                      <div className="absolute z-[100] mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden">
+                        {/* Search dentro do dropdown */}
+                        <div className="p-2 border-b border-slate-100">
+                          <div className="relative">
+                            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                            <input
+                              type="text"
+                              value={schoolSearch}
+                              onChange={(e) => setSchoolSearch(e.target.value)}
+                              placeholder="Buscar escola..."
+                              className="w-full text-xs rounded border border-slate-200 bg-slate-50 pl-8 pr-2 py-1.5 outline-none focus:ring-1 focus:ring-brand-blue font-medium"
+                              autoFocus
+                            />
+                          </div>
+                        </div>
+                        <div className="max-h-48 overflow-y-auto">
+                          {filteredSchools.length > 0 ? (
+                            filteredSchools.map((school) => (
+                              <button
+                                key={school.instituicaoId}
+                                onClick={() => {
+                                  setInstituicaoId(school.instituicaoId);
+                                  setSchoolSearch('');
+                                  setShowSchoolDropdown(false);
+                                }}
+                                className={`w-full text-left px-4 py-2.5 hover:bg-slate-50 border-b border-slate-100 last:border-b-0 transition-colors cursor-pointer ${
+                                  instituicaoId === school.instituicaoId ? 'bg-brand-ice' : ''
+                                }`}
+                              >
+                                <p className="text-sm font-semibold text-slate-800">{school.nomeInstituicao}</p>
+                                <p className="text-[10px] text-slate-400 font-mono mt-0.5">{school.instituicaoId}</p>
+                              </button>
+                            ))
+                          ) : (
+                            <div className="px-4 py-4 text-center text-sm text-slate-400">
+                              Nenhuma escola encontrada
+                            </div>
+                          )}
                         </div>
                       </div>
-                      <div className="max-h-48 overflow-y-auto">
-                        {filteredSchools.length > 0 ? (
-                          filteredSchools.map((school) => (
-                            <button
-                              key={school.instituicaoId}
-                              onClick={() => {
-                                setInstituicaoId(school.instituicaoId);
-                                setSchoolSearch('');
-                                setShowSchoolDropdown(false);
-                              }}
-                              className={`w-full text-left px-4 py-2.5 hover:bg-slate-50 border-b border-slate-100 last:border-b-0 transition-colors cursor-pointer ${
-                                instituicaoId === school.instituicaoId ? 'bg-brand-ice' : ''
-                              }`}
-                            >
-                              <p className="text-sm font-semibold text-slate-800">{school.nomeInstituicao}</p>
-                              <p className="text-[10px] text-slate-400 font-mono mt-0.5">{school.instituicaoId}</p>
-                            </button>
-                          ))
-                        ) : (
-                          <div className="px-4 py-4 text-center text-sm text-slate-400">
-                            Nenhuma escola encontrada
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                    )}
+                  </div>
+                  {errors.instituicaoId && (
+                    <p className="text-xs font-bold text-rose-600 flex items-center gap-1">
+                      <AlertTriangle className="w-3.5 h-3.5" />{errors.instituicaoId}
+                    </p>
                   )}
                 </div>
-                {errors.instituicaoId && (
-                  <p className="text-xs font-bold text-rose-600 flex items-center gap-1">
-                    <AlertTriangle className="w-3.5 h-3.5" />{errors.instituicaoId}
-                  </p>
-                )}
               </div>
-            </Card>
+            </div>
           )}
 
           {/* 1. IDENTIFICAÇÃO DO ATIVO */}

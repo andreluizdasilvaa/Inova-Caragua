@@ -2,8 +2,9 @@
 
 import React, { useState, useMemo } from 'react';
 import { Occurrence, StatusOcorrencia, Prioridade, TipoSolicitacao } from '@/types';
-import { mockSchoolStats } from '@/mockData';
+import { api } from '@/lib/api';
 import { Card, Button, PriorityBadge, StatusBadge, TIPO_SOLICITACAO_LABEL, STATUS_OCORRENCIA_LABEL } from '@/components/UI';
+import { formatDate } from '@/lib/utils/timestamp';
 import { 
   Search, 
   SlidersHorizontal, 
@@ -81,7 +82,6 @@ export const AprovacaoView: React.FC<AprovacaoViewProps> = ({
 
   const schoolMap = useMemo(() => {
     const map: Record<string, string> = {};
-    mockSchoolStats.forEach(s => { map[s.instituicaoId] = s.nomeInstituicao; });
     occurrences.forEach(o => {
       if (!map[o.instituicaoId]) {
         map[o.instituicaoId] = o.instituicaoId;
@@ -180,13 +180,6 @@ export const AprovacaoView: React.FC<AprovacaoViewProps> = ({
     setShowScheduleModal(false);
     setSchedulingOcc(null);
     setExpandedOcc(null);
-  };
-
-  const formatDate = (date: Date | string | null | undefined) => {
-    if (!date) return '—';
-    const d = new Date(date);
-    if (isNaN(d.getTime())) return '—';
-    return d.toLocaleDateString('pt-BR');
   };
 
   const handleClearFilters = () => {

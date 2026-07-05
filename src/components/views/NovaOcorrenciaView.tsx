@@ -27,6 +27,8 @@ interface NovaOcorrenciaViewProps {
   onRegisterOccurrence: (occurrence: Occurrence) => void;
   editingOccurrence?: Occurrence | null;
   canEditPriority?: boolean;
+  instituicaoId?: string;
+  criadoPorId?: string;
 }
 
 const SOLICITACAO_TYPES: { id: TipoSolicitacao; label: string; description: string; icon: React.FC<React.SVGProps<SVGSVGElement>> }[] = [
@@ -53,7 +55,9 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
   setView,
   onRegisterOccurrence,
   editingOccurrence = null,
-  canEditPriority = false
+  canEditPriority = false,
+  instituicaoId: propInstituicaoId,
+  criadoPorId: propCriadoPorId,
 }) => {
   const isEditing = !!editingOccurrence;
 
@@ -191,7 +195,7 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
       descricao: description.trim(),
       tipoSolicitacao: solicitacaoType,
       status: isEditing && editingOccurrence ? editingOccurrence.status : 'ABERTA',
-      prioridade: isEditing && editingOccurrence ? editingOccurrence.prioridade : (canEditPriority ? priority : null),
+      prioridade: canEditPriority ? priority : (isEditing && editingOccurrence ? editingOccurrence.prioridade : null),
       localizacaoDescricao: localizacao.trim(),
       numeroPatrimonioTexto: selectedAsset?.numeroPatrimonio || null,
       anexos: attachedFiles.map((file, idx) => ({
@@ -216,21 +220,21 @@ export const NovaOcorrenciaView: React.FC<NovaOcorrenciaViewProps> = ({
       dataAprovacao: isEditing && editingOccurrence ? editingOccurrence.dataAprovacao : null,
       createdAt: isEditing && editingOccurrence ? editingOccurrence.createdAt : new Date(),
       updatedAt: new Date(),
-      instituicaoId: isEditing && editingOccurrence ? editingOccurrence.instituicaoId : 'inst_padrao',
+      instituicaoId: isEditing && editingOccurrence ? editingOccurrence.instituicaoId : (propInstituicaoId || ''),
       setorId: isEditing && editingOccurrence ? editingOccurrence.setorId : null,
       itemId: selectedAsset?.id || (isEditing && editingOccurrence ? editingOccurrence.itemId : null),
-      criadoPorId: isEditing && editingOccurrence ? editingOccurrence.criadoPorId : 'user_atual',
+      criadoPorId: isEditing && editingOccurrence ? editingOccurrence.criadoPorId : (propCriadoPorId || 'user_atual'),
       triagemPorId: isEditing && editingOccurrence ? editingOccurrence.triagemPorId : null,
       aprovadoPorId: isEditing && editingOccurrence ? editingOccurrence.aprovadoPorId : null,
     };
     
+    setView('ocorrencias');
     setTimeout(() => {
       onRegisterOccurrence(newOccurrence);
       setIsSubmitting(false);
       setShowSuccess(true);
       setTimeout(() => {
         setShowSuccess(false);
-        setView('ocorrencias');
       }, 2000);
     }, 800);
   };

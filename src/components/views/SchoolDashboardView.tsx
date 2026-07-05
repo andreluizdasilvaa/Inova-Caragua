@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { Occurrence, Asset, Prioridade, StatusOcorrencia, StatusItem, CategoriaItem } from '@/types';
 import { Card } from '@/components/UI';
+import { formatDate } from '@/lib/utils/timestamp';
 import { 
   CheckCircle, 
   AlertTriangle, 
@@ -82,13 +83,6 @@ export const SchoolDashboardView: React.FC<SchoolDashboardViewProps> = ({
       CATEGORIA_CRITICA.includes(a.categoria) && a.status !== 'BAIXADO'
     );
   }, [schoolAssets]);
-
-  const formatDate = (date: Date | string | null | undefined) => {
-    if (!date) return '—';
-    const d = new Date(date);
-    if (isNaN(d.getTime())) return '—';
-    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
-  };
 
   return (
     <div className="space-y-5">

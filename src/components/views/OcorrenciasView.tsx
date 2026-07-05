@@ -3,7 +3,8 @@
 import React, { useState, useMemo } from 'react';
 import { Occurrence, StatusOcorrencia, Prioridade, TipoSolicitacao } from '@/types';
 import { Card, Button, PriorityBadge, StatusBadge, TIPO_SOLICITACAO_LABEL } from '@/components/UI';
-import { Search, Edit, SlidersHorizontal, Calendar, Clock } from 'lucide-react';
+import { Search, Edit, SlidersHorizontal, Calendar, Clock, AlertTriangle, ArrowLeftRight, X } from 'lucide-react';
+import { formatDate, formatTime } from '@/lib/utils/timestamp';
 
 interface OcorrenciasViewProps {
   occurrences: Occurrence[];
@@ -75,25 +76,6 @@ export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
     });
   }, [occurrences, searchQuery, selectedPriority, selectedStatus, selectedTipo]);
 
-  const formatDate = (date: Date | string | null | undefined) => {
-    if (!date) return '—';
-    const d = new Date(date);
-    if (isNaN(d.getTime())) return '—';
-    return d.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
-  };
-
-  const formatTime = (date: Date | null | undefined) => {
-    if (!date) return '';
-    return date.toLocaleTimeString('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
   const handleClearFilters = () => {
     setSearchQuery('');
     setSelectedPriority('Todas');
@@ -116,9 +98,32 @@ export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
     setCurrentPage(1);
   }, [searchQuery, selectedPriority, selectedStatus, selectedTipo, itemsPerPage]);
 
+  const [showMotivoModal, setShowMotivoModal] = useState<string | null>(null);
+  const [motivoOcc, setMotivoOcc] = useState<Occurrence | null>(null);
+
   const handleEditClick = (occ: Occurrence) => {
     setSelectedOccurrence(occ);
     setView('nova-ocorrencia');
+  };
+
+  const handleRevisarClick = (occ: Occurrence) => {
+    setMotivoOcc(occ);
+    setShowMotivoModal(occ.motivoRecusa || '');
+  };
+
+  const handleReenviarClick = () => {
+    if (!motivoOcc) return;
+    // Set status back to ABERTA and clear motivoRecusa
+    const updated: Occurrence = {
+      ...motivoOcc,
+      status: 'ABERTA',
+      motivoRecusa: null,
+    };
+    if (onUpdateOccurrence) {
+      onUpdateOccurrence(updated);
+    }
+    setShowMotivoModal(null);
+    setMotivoOcc(null);
   };
 
   const goToPage = (page: number) => {
@@ -127,6 +132,52 @@ export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
 
   return (
     <div className="space-y-5">
+      {/* Motivo Recusa Modal */}
+      {showMotivoModal !== null && motivoOcc && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-orange-500" />
+                Correção Necessária
+              </h3>
+              <button onClick={() => setShowMotivoModal(null)} className="p-1.5 hover:bg-slate-100 rounded transition-colors cursor-pointer">
+                <X className="w-5 h-5 text-slate-500" />
+              </button>
+            </div>
+
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+              <p className="text-xs font-bold text-orange-700 uppercase tracking-wider mb-2">Motivo da Recusa / Correção</p>
+              <p className="text-sm text-orange-900 font-medium leading-relaxed whitespace-pre-wrap">
+                {motivoOcc.motivoRecusa || 'Nenhum motivo detalhado foi fornecido.'}
+              </p>
+            </div>
+
+            <div className="bg-slate-50 rounded-lg p-4 space-y-2">
+              <p className="text-sm font-bold text-slate-700">Ocorrência #{motivoOcc.numero}</p>
+              <p className="text-sm text-slate-600">{motivoOcc.titulo}</p>
+            </div>
+
+            <div className="flex gap-2 pt-3 border-t border-slate-200">
+              <Button variant="outline" onClick={() => setShowMotivoModal(null)}
+                className="flex-1 border-slate-300 text-slate-700 hover:bg-slate-50">
+                Fechar
+              </Button>
+              <Button variant="secondary" onClick={() => { setShowMotivoModal(null); handleEditClick(motivoOcc); }}
+                className="flex-1 bg-brand-blue hover:bg-brand-teal">
+                <Edit className="w-4 h-4 mr-1.5" />
+                Editar e Reenviar
+              </Button>
+              <Button variant="primary" onClick={handleReenviarClick}
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700">
+                <ArrowLeftRight className="w-4 h-4 mr-1.5" />
+                Reenviar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Gestão de Ocorrências</h2>
@@ -231,14 +282,25 @@ export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm font-semibold text-slate-600">
               {paginatedOccurrences.length > 0 ? (
-                paginatedOccurrences.map((occ) => (
+                paginatedOccurrences.map((occ) => {
+                  const isAguardandoCorrecao = occ.status === 'AGUARDANDO_CORRECAO';
+                  return (
                   <tr 
                     key={occ.id} 
-                    className="hover:bg-slate-50/70 transition-colors duration-150"
+                    className={`transition-colors duration-150 ${
+                      isAguardandoCorrecao 
+                        ? 'bg-orange-50/70 border-l-4 border-l-orange-400 hover:bg-orange-100/70' 
+                        : 'hover:bg-slate-50/70'
+                    }`}
                   >
                     <td className="py-3 px-4 font-mono text-sm font-bold text-slate-500">#{occ.numero}</td>
                     <td className="py-3 px-4">
-                      <span className="font-bold text-slate-900 max-w-[200px] truncate block" title={occ.titulo}>{occ.titulo}</span>
+                      <div className="flex items-center gap-2">
+                        {isAguardandoCorrecao && (
+                          <AlertTriangle className="w-4 h-4 text-orange-500 shrink-0" />
+                        )}
+                        <span className="font-bold text-slate-900 max-w-[180px] truncate block" title={occ.titulo}>{occ.titulo}</span>
+                      </div>
                     </td>
                     <td className="py-3 px-4">
                       <span className="text-xs font-semibold text-slate-600">{TIPO_LABEL[occ.tipoSolicitacao]}</span>
@@ -252,22 +314,37 @@ export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
                     <td className="py-3 px-4 text-slate-500">{formatDate(occ.createdAt)}</td>
                     <td className="py-3 px-4 text-slate-500">
                       {occ.dataVisitaAgendada ? (
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-xs font-bold text-purple-700 bg-purple-50 px-2 py-1 rounded border border-purple-200 flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {formatDate(occ.dataVisitaAgendada)}
-                          </span>
-                          <span className="text-[10px] font-semibold text-purple-600 flex items-center gap-1">
-                            <Clock className="w-2.5 h-2.5" />
-                            {formatTime(occ.dataVisitaAgendada)}
-                          </span>
-                        </div>
+                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-purple-700 bg-purple-50 px-2.5 py-1.5 rounded-md border border-purple-200 whitespace-nowrap">
+                          <Calendar className="w-3.5 h-3.5 text-purple-500 shrink-0" />
+                          {formatDate(occ.dataVisitaAgendada)}
+                          <span className="text-purple-300">•</span>
+                          <Clock className="w-3.5 h-3.5 text-purple-500 shrink-0" />
+                          {formatTime(occ.dataVisitaAgendada)}
+                        </span>
                       ) : (
                         <span className="text-xs text-slate-400">—</span>
                       )}
                     </td>
-                    {canEdit && (
-                      <td className="py-3 px-4 text-right">
+                    <td className="py-3 px-4 text-right whitespace-nowrap">
+                      {isAguardandoCorrecao ? (
+                        <div className="flex items-center gap-1.5 justify-end">
+                          <button
+                            onClick={() => handleRevisarClick(occ)}
+                            title="Ver motivo da correção e reenviar"
+                            className="px-3 py-1.5 text-xs font-bold rounded bg-orange-500 hover:bg-orange-600 text-white border border-orange-500 transition-all inline-flex items-center gap-1 cursor-pointer shadow-sm"
+                          >
+                            <AlertTriangle className="w-3.5 h-3.5" />
+                            Revisar
+                          </button>
+                          <button
+                            onClick={() => handleEditClick(occ)}
+                            title="Editar ocorrência"
+                            className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-all inline-flex items-center cursor-pointer"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : canEdit && (
                         <button
                           onClick={() => handleEditClick(occ)}
                           title="Editar ocorrência"
@@ -275,10 +352,11 @@ export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
                         >
                           <Edit className="w-4 h-4" />
                         </button>
-                      </td>
-                    )}
+                      )}
+                    </td>
                   </tr>
-                ))
+                  );
+                })
               ) : (
                 <tr>
                   <td colSpan={canEdit ? 8 : 7} className="py-10 text-center text-slate-400">

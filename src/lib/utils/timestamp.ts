@@ -28,10 +28,17 @@ export function formatTimestamp(date: Date): string {
 /**
  * Formats a Date object to "DD/MM/YYYY" (date only)
  */
-export function formatDate(date: Date): string {
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = date.getFullYear();
+export function formatDate(date: Date | string | number): string {
+
+  const parsedDate = new Date(date);
+
+  if (isNaN(parsedDate.getTime())) {
+    return 'Data inválida'; 
+  }
+
+  const day = String(parsedDate.getUTCDate()).padStart(2, '0');
+  const month = String(parsedDate.getUTCMonth() + 1).padStart(2, '0');
+  const year = parsedDate.getUTCFullYear();
   
   return `${day}/${month}/${year}`;
 }
@@ -39,9 +46,15 @@ export function formatDate(date: Date): string {
 /**
  * Formats a Date object to "HH:MM" (time only)
  */
-export function formatTime(date: Date): string {
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
+export function formatTime(date: Date | string | number): string {
+  const parsedDate = new Date(date);
+
+  if (isNaN(parsedDate.getTime())) {
+    return '00:00';
+  }
+
+  const hours = String(parsedDate.getUTCHours()).padStart(2, '0');
+  const minutes = String(parsedDate.getUTCMinutes()).padStart(2, '0');
   
   return `${hours}:${minutes}`;
 }

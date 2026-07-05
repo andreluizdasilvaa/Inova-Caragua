@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Asset, CategoriaItem, StatusItem, EstadoConservacao } from '@/types';
-import { mockSchoolStats } from '@/mockData';
+import { api } from '@/lib/api';
 import { Card, Button } from '@/components/UI';
 import { 
   ArrowLeft, 
@@ -24,7 +24,7 @@ interface NovoAtivoViewProps {
   userRole?: 'MESTRE' | 'TRIAGEM' | 'ESCOLA';
   instituicaoId?: string;
   instituicaoNome?: string;
-  editingAsset?: Asset | null; // Se fornecido, entra em modo de edição
+  editingAsset?: Asset | null;
 }
 
 const CATEGORIA_OPTIONS: { value: CategoriaItem; label: string }[] = [
@@ -60,10 +60,8 @@ export const NovoAtivoView: React.FC<NovoAtivoViewProps> = ({
   instituicaoNome,
   editingAsset,
 }) => {
-  // Determina se é edição baseado no editingAsset recebido
   const isEditing = !!editingAsset;
 
-  // Form state - preenche com dados do editingAsset se estiver editando
   const [numeroPatrimonio, setNumeroPatrimonio] = useState(editingAsset?.numeroPatrimonio || '');
   const [nome, setNome] = useState(editingAsset?.nome || '');
   const [marca, setMarca] = useState(editingAsset?.marca || '');
@@ -79,8 +77,8 @@ export const NovoAtivoView: React.FC<NovoAtivoViewProps> = ({
   const [instituicaoId, setInstituicaoId] = useState(editingAsset?.instituicaoId || propInstituicaoId || '');
   const [showSchoolDropdown, setShowSchoolDropdown] = useState(false);
   const [schoolSearch, setSchoolSearch] = useState('');
+  const [schools, setSchools] = useState<any[]>([]);
 
-  // UI state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -88,24 +86,29 @@ export const NovoAtivoView: React.FC<NovoAtivoViewProps> = ({
   const isMestre = userRole === 'MESTRE';
   const isEscola = userRole === 'ESCOLA';
 
-  // Find the selected school name
-  const selectedSchool = mockSchoolStats.find(s => s.instituicaoId === instituicaoId);
+  // Fetch schools from API
+  useEffect(() => {
+    if (isMestre) {
+      api.instituicoes.list()
+        .then(data => setSchools(Array.isArray(data) ? data : []))
+        .catch(() => setSchools([]));
+    }
+  }, [isMestre]);
+
+  const selectedSchool = schools.find((s: any) => s.id === instituicaoId);
   const selectedSchoolName = isEscola 
     ? (instituicaoNome || 'Minha Escola') 
-    : (selectedSchool?.nomeInstituicao || '');
+    : (selectedSchool?.nome || '');
 
-  // Filter schools for the selector
-  const filteredSchools = mockSchoolStats.filter(s => 
-    s.nomeInstituicao.toLowerCase().includes(schoolSearch.toLowerCase())
+  const filteredSchools = schools.filter((s: any) => 
+    s.nome.toLowerCase().includes(schoolSearch.toLowerCase())
   );
 
-  // Filter localizacao options
   const filteredLocalizacoes = LOCALIZACAO_OPTIONS.filter(
     (loc) => loc.toLowerCase().includes(localizacao.toLowerCase())
   );
 
   const handleSubmit = () => {
-    // Clear previous errors
     const newErrors: Record<string, string> = {};
 
     if (!nome.trim()) {
@@ -154,11 +157,8 @@ export const NovoAtivoView: React.FC<NovoAtivoViewProps> = ({
 
     setIsSubmitting(false);
     setShowSuccess(true);
-
-    // Redireciona imediatamente para o inventário
     setView('inventario');
 
-    // Toast some sozinho após 2.5s
     setTimeout(() => {
       setShowSuccess(false);
     }, 2500);
@@ -170,7 +170,6 @@ export const NovoAtivoView: React.FC<NovoAtivoViewProps> = ({
 
   return (
     <div className="space-y-5">
-      {/* Success Toast */}
       {showSuccess && (
         <div className="fixed top-16 right-4 bg-teal-900 text-white border border-teal-700 px-4 py-3 rounded shadow-lg z-50 flex items-center gap-3 animate-fade-in max-w-sm">
           <CheckCircle className="w-5 h-5 text-teal-400 shrink-0" />
@@ -185,7 +184,6 @@ export const NovoAtivoView: React.FC<NovoAtivoViewProps> = ({
         </div>
       )}
 
-      {/* Page Header */}
       <div className="flex items-center gap-3">
         <button onClick={() => setView('inventario')} className="p-2 hover:bg-slate-100 rounded text-slate-600 transition-colors cursor-pointer">
           <ArrowLeft className="w-5 h-5" />
@@ -202,8 +200,6 @@ export const NovoAtivoView: React.FC<NovoAtivoViewProps> = ({
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         <div className="lg:col-span-8 space-y-5">
-
-          {/* 0. UNIDADE ESCOLAR (apenas para MESTRE) */}
           {isMestre && (
             <div className="bg-white border border-slate-200/80 rounded-lg">
               <div className="p-5 space-y-4">
@@ -211,298 +207,166 @@ export const NovoAtivoView: React.FC<NovoAtivoViewProps> = ({
                   <School className="w-4 h-4 text-brand-blue" />
                   <h3 className="text-sm font-bold text-slate-800">Unidade Escolar</h3>
                 </div>
-
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
                     Selecione a Escola <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
                     <School className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 z-10" />
-                    <input
-                      type="text"
-                      readOnly
-                      value={selectedSchoolName}
+                    <input type="text" readOnly value={selectedSchoolName}
                       onFocus={() => setShowSchoolDropdown(true)}
                       placeholder="Clique para selecionar uma escola..."
-                      className={`w-full text-sm rounded border bg-slate-50 pl-10 pr-10 py-2.5 outline-none focus:bg-white focus:ring-1 focus:ring-brand-blue transition-all font-semibold cursor-pointer ${
-                        errors.instituicaoId ? 'border-rose-300 bg-rose-50' : 'border-slate-200'
-                      }`}
-                    />
+                      className={`w-full text-sm rounded border bg-slate-50 pl-10 pr-10 py-2.5 outline-none focus:bg-white focus:ring-1 focus:ring-brand-blue transition-all font-semibold cursor-pointer ${errors.instituicaoId ? 'border-rose-300 bg-rose-50' : 'border-slate-200'}`} />
                     <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-
                     {showSchoolDropdown && (
                       <div className="absolute z-[100] mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden">
-                        {/* Search dentro do dropdown */}
                         <div className="p-2 border-b border-slate-100">
                           <div className="relative">
                             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                            <input
-                              type="text"
-                              value={schoolSearch}
-                              onChange={(e) => setSchoolSearch(e.target.value)}
-                              placeholder="Buscar escola..."
-                              className="w-full text-xs rounded border border-slate-200 bg-slate-50 pl-8 pr-2 py-1.5 outline-none focus:ring-1 focus:ring-brand-blue font-medium"
-                              autoFocus
-                            />
+                            <input type="text" value={schoolSearch} onChange={(e) => setSchoolSearch(e.target.value)}
+                              placeholder="Buscar escola..." className="w-full text-xs rounded border border-slate-200 bg-slate-50 pl-8 pr-2 py-1.5 outline-none focus:ring-1 focus:ring-brand-blue font-medium" autoFocus />
                           </div>
                         </div>
                         <div className="max-h-48 overflow-y-auto">
-                          {filteredSchools.length > 0 ? (
-                            filteredSchools.map((school) => (
-                              <button
-                                key={school.instituicaoId}
-                                onClick={() => {
-                                  setInstituicaoId(school.instituicaoId);
-                                  setSchoolSearch('');
-                                  setShowSchoolDropdown(false);
-                                }}
-                                className={`w-full text-left px-4 py-2.5 hover:bg-slate-50 border-b border-slate-100 last:border-b-0 transition-colors cursor-pointer ${
-                                  instituicaoId === school.instituicaoId ? 'bg-brand-ice' : ''
-                                }`}
-                              >
-                                <p className="text-sm font-semibold text-slate-800">{school.nomeInstituicao}</p>
-                                <p className="text-[10px] text-slate-400 font-mono mt-0.5">{school.instituicaoId}</p>
-                              </button>
-                            ))
-                          ) : (
-                            <div className="px-4 py-4 text-center text-sm text-slate-400">
-                              Nenhuma escola encontrada
-                            </div>
+                          {filteredSchools.length > 0 ? filteredSchools.map((school: any) => (
+                            <button key={school.id} onClick={() => { setInstituicaoId(school.id); setSchoolSearch(''); setShowSchoolDropdown(false); }}
+                              className={`w-full text-left px-4 py-2.5 hover:bg-slate-50 border-b border-slate-100 last:border-b-0 transition-colors cursor-pointer ${instituicaoId === school.id ? 'bg-brand-ice' : ''}`}>
+                              <p className="text-sm font-semibold text-slate-800">{school.nome}</p>
+                              <p className="text-[10px] text-slate-400 font-mono mt-0.5">{school.id}</p>
+                            </button>
+                          )) : (
+                            <div className="px-4 py-4 text-center text-sm text-slate-400">Nenhuma escola encontrada</div>
                           )}
                         </div>
                       </div>
                     )}
                   </div>
                   {errors.instituicaoId && (
-                    <p className="text-xs font-bold text-rose-600 flex items-center gap-1">
-                      <AlertTriangle className="w-3.5 h-3.5" />{errors.instituicaoId}
-                    </p>
+                    <p className="text-xs font-bold text-rose-600 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" />{errors.instituicaoId}</p>
                   )}
                 </div>
               </div>
             </div>
           )}
 
-          {/* 1. IDENTIFICAÇÃO DO ATIVO */}
           <Card className="p-5 space-y-4">
             <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
               <Hash className="w-4 h-4 text-brand-blue" />
               <h3 className="text-sm font-bold text-slate-800">1. Identificação do Ativo</h3>
             </div>
-
-            {/* Chave de Patrimônio */}
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-                Chave de Patrimônio
-              </label>
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Chave de Patrimônio</label>
               <div className="relative">
                 <Hash className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={numeroPatrimonio}
-                  onChange={(e) => setNumeroPatrimonio(e.target.value)}
-                  placeholder="Ex: PAT-2026-001"
-                  className="w-full text-sm rounded border border-slate-200 bg-slate-50 pl-10 pr-3 py-2.5 outline-none focus:bg-white focus:ring-1 focus:ring-brand-blue transition-all font-semibold"
-                />
+                <input type="text" value={numeroPatrimonio} onChange={(e) => setNumeroPatrimonio(e.target.value)}
+                  placeholder="Ex: PAT-2026-001" className="w-full text-sm rounded border border-slate-200 bg-slate-50 pl-10 pr-3 py-2.5 outline-none focus:bg-white focus:ring-1 focus:ring-brand-blue transition-all font-semibold" />
               </div>
             </div>
-
-            {/* Nome do Item */}
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-                Nome do Item <span className="text-rose-500">*</span>
-              </label>
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Nome do Item <span className="text-rose-500">*</span></label>
               <div className="relative">
                 <Tag className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={nome}
-                  onChange={(e) => setNome(e.target.value)}
+                <input type="text" value={nome} onChange={(e) => setNome(e.target.value)}
                   placeholder="Ex: Ar Condicionado 12000 BTUs"
-                  className={`w-full text-sm rounded border bg-slate-50 pl-10 pr-3 py-2.5 outline-none focus:bg-white focus:ring-1 focus:ring-brand-blue transition-all font-semibold ${
-                    errors.nome ? 'border-rose-300 bg-rose-50' : 'border-slate-200'
-                  }`}
-                />
+                  className={`w-full text-sm rounded border bg-slate-50 pl-10 pr-3 py-2.5 outline-none focus:bg-white focus:ring-1 focus:ring-brand-blue transition-all font-semibold ${errors.nome ? 'border-rose-300 bg-rose-50' : 'border-slate-200'}`} />
               </div>
-              {errors.nome && (
-                <p className="text-xs font-bold text-rose-600 flex items-center gap-1">
-                  <AlertTriangle className="w-3.5 h-3.5" />{errors.nome}
-                </p>
-              )}
+              {errors.nome && <p className="text-xs font-bold text-rose-600 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" />{errors.nome}</p>}
             </div>
-
-            {/* Marca / Modelo */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Marca</label>
-                <input
-                  type="text"
-                  value={marca}
-                  onChange={(e) => setMarca(e.target.value)}
-                  placeholder="Ex: Consul"
-                  className="w-full text-sm rounded border border-slate-200 bg-slate-50 px-3 py-2.5 outline-none focus:bg-white focus:ring-1 focus:ring-brand-blue transition-all font-semibold"
-                />
+                <input type="text" value={marca} onChange={(e) => setMarca(e.target.value)} placeholder="Ex: Consul"
+                  className="w-full text-sm rounded border border-slate-200 bg-slate-50 px-3 py-2.5 outline-none focus:bg-white focus:ring-1 focus:ring-brand-blue transition-all font-semibold" />
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Modelo</label>
-                <input
-                  type="text"
-                  value={modelo}
-                  onChange={(e) => setModelo(e.target.value)}
-                  placeholder="Ex: Split Hi-Wall Eco"
-                  className="w-full text-sm rounded border border-slate-200 bg-slate-50 px-3 py-2.5 outline-none focus:bg-white focus:ring-1 focus:ring-brand-blue transition-all font-semibold"
-                />
+                <input type="text" value={modelo} onChange={(e) => setModelo(e.target.value)} placeholder="Ex: Split Hi-Wall Eco"
+                  className="w-full text-sm rounded border border-slate-200 bg-slate-50 px-3 py-2.5 outline-none focus:bg-white focus:ring-1 focus:ring-brand-blue transition-all font-semibold" />
               </div>
             </div>
           </Card>
 
-          {/* 2. CLASSIFICAÇÃO */}
           <Card className="p-5 space-y-4">
             <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
               <FileText className="w-4 h-4 text-brand-blue" />
               <h3 className="text-sm font-bold text-slate-800">2. Classificação</h3>
             </div>
-
-            {/* Categoria do Ativo */}
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Categoria do Ativo</label>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                 {CATEGORIA_OPTIONS.map(({ value, label }) => {
                   const isActive = categoria === value;
                   return (
-                    <button
-                      key={value}
-                      onClick={() => setCategoria(value)}
-                      className={`p-2.5 rounded-lg border text-center transition-all cursor-pointer ${
-                        isActive
-                          ? 'bg-brand-ice border-brand-blue ring-1 ring-brand-blue/30'
-                          : 'bg-white border-slate-200 hover:border-slate-300'
-                      }`}
-                    >
-                      <p className={`text-xs font-bold leading-tight ${isActive ? 'text-brand-blue' : 'text-slate-700'}`}>
-                        {label}
-                      </p>
+                    <button key={value} onClick={() => setCategoria(value)}
+                      className={`p-2.5 rounded-lg border text-center transition-all cursor-pointer ${isActive ? 'bg-brand-ice border-brand-blue ring-1 ring-brand-blue/30' : 'bg-white border-slate-200 hover:border-slate-300'}`}>
+                      <p className={`text-xs font-bold leading-tight ${isActive ? 'text-brand-blue' : 'text-slate-700'}`}>{label}</p>
                     </button>
                   );
                 })}
               </div>
             </div>
-
-            {/* Status do Ativo */}
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Status do Ativo</label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 {STATUS_OPTIONS.map(({ value, label }) => {
                   const isActive = status === value;
                   return (
-                    <button
-                      key={value}
-                      onClick={() => setStatus(value)}
-                      className={`p-2.5 rounded-lg border text-center transition-all cursor-pointer ${
-                        isActive
-                          ? 'bg-brand-ice border-brand-blue ring-1 ring-brand-blue/30'
-                          : 'bg-white border-slate-200 hover:border-slate-300'
-                      }`}
-                    >
-                      <p className={`text-xs font-bold leading-tight ${isActive ? 'text-brand-blue' : 'text-slate-700'}`}>
-                        {label}
-                      </p>
+                    <button key={value} onClick={() => setStatus(value)}
+                      className={`p-2.5 rounded-lg border text-center transition-all cursor-pointer ${isActive ? 'bg-brand-ice border-brand-blue ring-1 ring-brand-blue/30' : 'bg-white border-slate-200 hover:border-slate-300'}`}>
+                      <p className={`text-xs font-bold leading-tight ${isActive ? 'text-brand-blue' : 'text-slate-700'}`}>{label}</p>
                     </button>
                   );
                 })}
               </div>
             </div>
-
-            {/* Localização do Ativo */}
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-                Localização do Ativo <span className="text-rose-500">*</span>
-              </label>
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Localização do Ativo <span className="text-rose-500">*</span></label>
               <div className="relative">
                 <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={localizacao}
-                  onChange={(e) => {
-                    setLocalizacao(e.target.value);
-                    setShowLocalizacaoDropdown(true);
-                  }}
-                  onFocus={() => setShowLocalizacaoDropdown(true)}
-                  onBlur={() => setTimeout(() => setShowLocalizacaoDropdown(false), 200)}
+                <input type="text" value={localizacao} onChange={(e) => { setLocalizacao(e.target.value); setShowLocalizacaoDropdown(true); }}
+                  onFocus={() => setShowLocalizacaoDropdown(true)} onBlur={() => setTimeout(() => setShowLocalizacaoDropdown(false), 200)}
                   placeholder="Ex: Sala 1, Secretaria, Pátio..."
-                  className={`w-full text-sm rounded border bg-slate-50 pl-10 pr-3 py-2.5 outline-none focus:bg-white focus:ring-1 focus:ring-brand-blue transition-all font-semibold ${
-                    errors.localizacao ? 'border-rose-300 bg-rose-50' : 'border-slate-200'
-                  }`}
-                />
+                  className={`w-full text-sm rounded border bg-slate-50 pl-10 pr-3 py-2.5 outline-none focus:bg-white focus:ring-1 focus:ring-brand-blue transition-all font-semibold ${errors.localizacao ? 'border-rose-300 bg-rose-50' : 'border-slate-200'}`} />
                 {showLocalizacaoDropdown && localizacao && (
                   <div className="absolute z-10 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                    {filteredLocalizacoes.length > 0 ? (
-                      filteredLocalizacoes.map((loc) => (
-                        <button
-                          key={loc}
-                          onClick={() => {
-                            setLocalizacao(loc);
-                            setShowLocalizacaoDropdown(false);
-                          }}
-                          className="w-full text-left px-4 py-2.5 hover:bg-slate-50 border-b border-slate-100 last:border-b-0 transition-colors cursor-pointer"
-                        >
-                          <span className="text-sm font-semibold text-slate-700">{loc}</span>
-                        </button>
-                      ))
-                    ) : (
-                      <div className="px-4 py-3 text-center text-sm text-slate-400">
-                        Digite uma localização personalizada
-                      </div>
+                    {filteredLocalizacoes.length > 0 ? filteredLocalizacoes.map((loc) => (
+                      <button key={loc} onClick={() => { setLocalizacao(loc); setShowLocalizacaoDropdown(false); }}
+                        className="w-full text-left px-4 py-2.5 hover:bg-slate-50 border-b border-slate-100 last:border-b-0 transition-colors cursor-pointer">
+                        <span className="text-sm font-semibold text-slate-700">{loc}</span>
+                      </button>
+                    )) : (
+                      <div className="px-4 py-3 text-center text-sm text-slate-400">Digite uma localização personalizada</div>
                     )}
                   </div>
                 )}
               </div>
-              {errors.localizacao && (
-                <p className="text-xs font-bold text-rose-600 flex items-center gap-1">
-                  <AlertTriangle className="w-3.5 h-3.5" />{errors.localizacao}
-                </p>
-              )}
+              {errors.localizacao && <p className="text-xs font-bold text-rose-600 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" />{errors.localizacao}</p>}
             </div>
-
-            {/* Data de Aquisição */}
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Data de Aquisição</label>
               <div className="relative">
                 <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="date"
-                  value={dataAquisicao}
-                  onChange={(e) => setDataAquisicao(e.target.value)}
-                  max={formatDateForInput()}
-                  className="w-full text-sm rounded border border-slate-200 bg-slate-50 pl-10 pr-3 py-2.5 outline-none focus:bg-white focus:ring-1 focus:ring-brand-blue transition-all font-semibold text-slate-700"
-                />
+                <input type="date" value={dataAquisicao} onChange={(e) => setDataAquisicao(e.target.value)} max={formatDateForInput()}
+                  className="w-full text-sm rounded border border-slate-200 bg-slate-50 pl-10 pr-3 py-2.5 outline-none focus:bg-white focus:ring-1 focus:ring-brand-blue transition-all font-semibold text-slate-700" />
               </div>
               <p className="text-[10px] text-slate-400">Deixe em branco caso a data exata seja desconhecida.</p>
             </div>
           </Card>
 
-          {/* 3. INFORMAÇÕES ADICIONAIS */}
           <Card className="p-5 space-y-4">
             <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
               <FileText className="w-4 h-4 text-brand-blue" />
               <h3 className="text-sm font-bold text-slate-800">3. Informações Adicionais</h3>
             </div>
-
-            {/* Descrição Adicional */}
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Descrição Adicional</label>
-              <textarea
-                rows={4}
-                value={descricaoAdicional}
-                onChange={(e) => setDescricaoAdicional(e.target.value)}
+              <textarea rows={4} value={descricaoAdicional} onChange={(e) => setDescricaoAdicional(e.target.value)}
                 placeholder="Informações complementares sobre o ativo, como fornecedor, nota fiscal, observações técnicas..."
-                className="w-full text-sm border border-slate-200 rounded-lg p-3 outline-none focus:ring-1 focus:ring-brand-blue transition-all bg-white font-medium resize-none"
-              />
+                className="w-full text-sm border border-slate-200 rounded-lg p-3 outline-none focus:ring-1 focus:ring-brand-blue transition-all bg-white font-medium resize-none" />
             </div>
           </Card>
         </div>
 
-        {/* Sidebar - Resumo */}
         <div className="lg:col-span-4 space-y-5">
           <Card className="p-5 space-y-4 sticky top-20">
             <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
@@ -510,23 +374,18 @@ export const NovoAtivoView: React.FC<NovoAtivoViewProps> = ({
               <h3 className="text-sm font-bold text-slate-800">Resumo do Cadastro</h3>
             </div>
             <div className="space-y-3">
-              {/* Mostrar escola no resumo para MESTRE */}
               {isMestre && (
                 <>
                   <div>
                     <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Unidade Escolar</span>
-                    <p className="text-sm font-bold text-slate-800 mt-0.5 truncate">
-                      {selectedSchoolName || '—'}
-                    </p>
+                    <p className="text-sm font-bold text-slate-800 mt-0.5 truncate">{selectedSchoolName || '—'}</p>
                   </div>
                   <div className="h-px bg-slate-100" />
                 </>
               )}
               <div>
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Patrimônio</span>
-                <p className="text-sm font-mono font-bold text-slate-800 mt-0.5 truncate">
-                  {numeroPatrimonio || '—'}
-                </p>
+                <p className="text-sm font-mono font-bold text-slate-800 mt-0.5 truncate">{numeroPatrimonio || '—'}</p>
               </div>
               <div className="h-px bg-slate-100" />
               <div>
@@ -536,9 +395,7 @@ export const NovoAtivoView: React.FC<NovoAtivoViewProps> = ({
               <div className="h-px bg-slate-100" />
               <div>
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Categoria</span>
-                <p className="text-sm font-bold text-brand-blue mt-0.5">
-                  {CATEGORIA_OPTIONS.find((c) => c.value === categoria)?.label || categoria}
-                </p>
+                <p className="text-sm font-bold text-brand-blue mt-0.5">{CATEGORIA_OPTIONS.find((c) => c.value === categoria)?.label || categoria}</p>
               </div>
               <div className="h-px bg-slate-100" />
               <div>
@@ -548,34 +405,20 @@ export const NovoAtivoView: React.FC<NovoAtivoViewProps> = ({
               <div className="h-px bg-slate-100" />
               <div>
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Status</span>
-                <p className="text-sm font-bold text-slate-800 mt-0.5">
-                  {STATUS_OPTIONS.find((s) => s.value === status)?.label || status}
-                </p>
+                <p className="text-sm font-bold text-slate-800 mt-0.5">{STATUS_OPTIONS.find((s) => s.value === status)?.label || status}</p>
               </div>
               <div className="h-px bg-slate-100" />
               <div>
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Data de Aquisição</span>
-                <p className="text-sm font-bold text-slate-800 mt-0.5">
-                  {dataAquisicao ? new Date(dataAquisicao).toLocaleDateString('pt-BR') : '—'}
-                </p>
+                <p className="text-sm font-bold text-slate-800 mt-0.5">{dataAquisicao ? new Date(dataAquisicao).toLocaleDateString('pt-BR') : '—'}</p>
               </div>
             </div>
-
-            <Button
-              variant="secondary"
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="w-full bg-brand-blue hover:bg-brand-teal text-sm py-3 mt-2"
-            >
+            <Button variant="secondary" onClick={handleSubmit} disabled={isSubmitting}
+              className="w-full bg-brand-blue hover:bg-brand-teal text-sm py-3 mt-2">
               {isSubmitting ? (
-                <span className="flex items-center gap-2">
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Salvando...
-                </span>
+                <span className="flex items-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Salvando...</span>
               ) : (
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle className="w-5 h-5" /> {isEditing ? 'Atualizar Ativo' : 'Cadastrar Ativo'}
-                </span>
+                <span className="flex items-center gap-1.5"><CheckCircle className="w-5 h-5" /> {isEditing ? 'Atualizar Ativo' : 'Cadastrar Ativo'}</span>
               )}
             </Button>
           </Card>

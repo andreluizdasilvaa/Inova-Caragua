@@ -66,8 +66,8 @@ export const SchoolDashboardView: React.FC<SchoolDashboardViewProps> = ({
     return { open, inProgress, resolved };
   }, [schoolOccurrences]);
 
-  const recentProblems = useMemo(() => {
-    return [...schoolOccurrences].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  const recentOccurrences = useMemo(() => {
+    return [...schoolOccurrences].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [schoolOccurrences]);
 
   const criticalAssets = useMemo(() => {
@@ -76,8 +76,11 @@ export const SchoolDashboardView: React.FC<SchoolDashboardViewProps> = ({
     );
   }, [schoolAssets]);
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+  const formatDate = (date: Date | string | null | undefined) => {
+    if (!date) return '—';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
   return (

@@ -115,8 +115,8 @@ export const AprovacaoView: React.FC<AprovacaoViewProps> = ({
     });
 
     result.sort((a, b) => {
-      const dateA = a.createdAt.getTime();
-      const dateB = b.createdAt.getTime();
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
       return sortOrder === 'recent' ? dateB - dateA : dateA - dateB;
     });
 
@@ -175,12 +175,11 @@ export const AprovacaoView: React.FC<AprovacaoViewProps> = ({
     setExpandedOcc(null);
   };
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
+  const formatDate = (date: Date | string | null | undefined) => {
+    if (!date) return '—';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('pt-BR');
   };
 
   const handleClearFilters = () => {

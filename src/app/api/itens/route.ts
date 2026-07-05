@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
     const id = searchParams.get('id');
     const pageRaw = searchParams.get('page');
     const limitRaw = searchParams.get('limit');
+    const searchRaw = searchParams.get('search');
 
     // Single item fetch
     if (id) {
@@ -34,8 +35,18 @@ export async function GET(request: NextRequest) {
       where.categoria = categoria;
     }
 
+    if (searchRaw) {
+      const q = searchRaw;
+      where.OR = [
+        { nome: { contains: q, mode: 'insensitive' } },
+        { numeroPatrimonio: { contains: q, mode: 'insensitive' } },
+        { marca: { contains: q, mode: 'insensitive' } },
+        { modelo: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
     const page = pageRaw ? Math.max(1, parseInt(pageRaw)) : 1;
-    const limit = limitRaw ? Math.max(1, Math.min(100, parseInt(limitRaw))) : 50;
+    const limit = limitRaw ? Math.max(1, parseInt(limitRaw)) : 999999;
     const skip = (page - 1) * limit;
 
     const [itens, total] = await Promise.all([

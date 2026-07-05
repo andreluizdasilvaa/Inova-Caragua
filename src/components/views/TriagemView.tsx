@@ -180,7 +180,7 @@ export const TriagemView: React.FC<TriagemViewProps> = ({
   const handleAction = (newStatus: StatusOcorrencia) => {
     if (!currentOcc) return;
     
-    const updated: Occurrence = {
+    const updated: any = {
       ...currentOcc,
       prioridade: triagePriority,
       tipoSolicitacao: triageTipo,

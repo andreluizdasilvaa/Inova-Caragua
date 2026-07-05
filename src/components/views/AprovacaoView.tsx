@@ -144,7 +144,7 @@ export const AprovacaoView: React.FC<AprovacaoViewProps> = ({
       return;
     }
     
-    const updated: Occurrence = {
+    const updated: any = {
       ...occ,
       status: newStatus,
       dataAprovacao: newStatus === 'APROVADA' || newStatus === 'RECUSADA' ? new Date() : occ.dataAprovacao,

@@ -49,17 +49,14 @@ export default function SchoolPage() {
 
     setLoading(true);
     try {
-      const [occResult, itemsResult, instResult] = await Promise.all([
+      const [occResult, instResult] = await Promise.all([
         api.occurrences.list({ instituicaoId }),
-        api.items.list({ instituicaoId }),
         api.instituicoes.list(),
       ]);
 
       const occurrences = Array.isArray(occResult) ? occResult : (occResult as any).data || [];
-      const items = Array.isArray(itemsResult) ? itemsResult : (itemsResult as any).data || [];
 
       setSchoolOccurrences(occurrences);
-      setSchoolAssets(items);
 
       // Find school name
       const instList = Array.isArray(instResult) ? instResult : [];
@@ -232,7 +229,7 @@ export default function SchoolPage() {
 
                 {currentView === 'inventario' && (
                   <InventarioView
-                    assets={schoolAssets}
+                    instituicaoId={instituicaoId}
                     setView={handleSetView}
                     setSelectedAsset={setSelectedAsset}
                   />

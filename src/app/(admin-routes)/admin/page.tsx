@@ -46,12 +46,10 @@ export default function AdminDashboard() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [occResult, itemsResult] = await Promise.all([
+      const [occResult] = await Promise.all([
         api.occurrences.list(),
-        api.items.list(),
       ]);
       setOccurrences(occResult);
-      setAssets(itemsResult);
     } catch (err) {
       console.error('Error fetching data:', err);
     } finally {
@@ -267,7 +265,6 @@ export default function AdminDashboard() {
 
                 {currentView === 'inventario' && (
                   <InventarioView
-                    assets={assets}
                     setView={navigateToView}
                     setSelectedAsset={setSelectedAsset}
                   />

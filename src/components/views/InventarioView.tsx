@@ -4,9 +4,11 @@ import React, { useState, useMemo } from 'react';
 import { Asset, CategoriaItem, EstadoConservacao, StatusItem } from '@/types';
 import { Card, Button, AssetStatusBadge } from '@/components/UI';
 import { Search, Plus, ListPlus, Eye, FileSpreadsheet, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { api } from '@/lib/api';
 
 interface InventarioViewProps {
-  assets: Asset[];
+  assets?: Asset[]; // Keeping for optional fallback but ignoring
+  instituicaoId?: string | null;
   setView: (view: string) => void;
   setSelectedAsset: (asset: Asset) => void;
 }
@@ -21,36 +23,56 @@ const CATEGORIA_LABEL: Record<CategoriaItem, string> = {
 };
 
 export const InventarioView: React.FC<InventarioViewProps> = ({
-  assets,
+  instituicaoId,
   setView,
   setSelectedAsset
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('Todas');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 25;
+  const [items, setItems] = useState<Asset[]>([]);
+  const [totalItems, setTotalItems] = useState(0);
+  const [assetStats, setAssetStats] = useState({ total: 0, ativo: 0, manutencao: 0, baixado: 0 });
+  const [isLoading, setIsLoading] = useState(true);
 
   const categories: (CategoriaItem | 'Todas')[] = ['Todas', 'INFORMATICA', 'MOBILIARIO', 'ELETRODOMESTICO', 'CONECTIVIDADE', 'PREDIAL', 'OUTRO'];
 
-  // Filter computation
-  const filteredAssets = useMemo(() => {
-    return assets.filter((asset) => {
-      const q = searchQuery.toLowerCase();
-      const matchesSearch = 
-        !q ||
-        asset.nome.toLowerCase().includes(q) ||
-        (asset.numeroPatrimonio && asset.numeroPatrimonio.toLowerCase().includes(q)) ||
-        (asset.marca && asset.marca.toLowerCase().includes(q)) ||
-        (asset.modelo && asset.modelo.toLowerCase().includes(q));
+  // Fetch paginated items and stats
+  React.useEffect(() => {
+    let isMounted = true;
+    setIsLoading(true);
 
-      const matchesCategory = selectedCategory === 'Todas' || asset.categoria === selectedCategory;
+    const fetchParams: any = { page: currentPage, limit: itemsPerPage };
+    if (instituicaoId) fetchParams.instituicaoId = instituicaoId;
+    if (selectedCategory !== 'Todas') fetchParams.categoria = selectedCategory;
+    if (searchQuery.trim()) fetchParams.search = searchQuery.trim();
 
-      return matchesSearch && matchesCategory;
+    Promise.all([
+      api.items.list(fetchParams),
+      api.items.stats({ instituicaoId: instituicaoId || undefined })
+    ]).then(([res, stats]) => {
+      if (!isMounted) return;
+      if (res && res.data) {
+        setItems(res.data);
+        setTotalItems(res.total);
+      } else if (Array.isArray(res)) {
+        setItems(res);
+        setTotalItems(res.length);
+      }
+      setAssetStats(stats);
+      setIsLoading(false);
+    }).catch(err => {
+      console.error('Failed to fetch items:', err);
+      setIsLoading(false);
     });
-  }, [assets, searchQuery, selectedCategory]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredAssets.length / itemsPerPage));
+    return () => { isMounted = false; };
+  }, [currentPage, itemsPerPage, instituicaoId, selectedCategory, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
 
   const paginationPages = useMemo<Array<number | 'ellipsis'>>(() => {
     if (totalPages <= 7) {
@@ -78,22 +100,17 @@ export const InventarioView: React.FC<InventarioViewProps> = ({
     return result;
   }, [currentPage, totalPages]);
 
-  const paginatedAssets = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredAssets.slice(start, start + itemsPerPage);
-  }, [filteredAssets, currentPage]);
-
-  const startItem = filteredAssets.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
-  const endItem = Math.min(currentPage * itemsPerPage, filteredAssets.length);
+  const startItem = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+  const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
   const stats = useMemo(() => {
     return {
-      total: assets.length,
-      ativo: assets.filter(a => a.status === 'ATIVO').length,
-      manutencao: assets.filter(a => a.status === 'EM_MANUTENCAO').length,
-      baixado: assets.filter(a => a.status === 'BAIXADO').length
+      total: assetStats.total,
+      ativo: assetStats.ativo,
+      manutencao: assetStats.manutencao,
+      baixado: assetStats.baixado
     };
-  }, [assets]);
+  }, [assetStats]);
 
   React.useEffect(() => {
     setCurrentPage(1);
@@ -225,7 +242,7 @@ export const InventarioView: React.FC<InventarioViewProps> = ({
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between pt-1 border-t border-slate-100">
             <p className="text-xs text-slate-500">
-              Exibindo <span className="font-semibold text-slate-700">{startItem}</span>-<span className="font-semibold text-slate-700">{endItem}</span> de <span className="font-semibold text-slate-700">{filteredAssets.length}</span> itens filtrados.
+              <span className="text-slate-500 font-medium">Exibindo {startItem}-{endItem} de {totalItems} itens filtrados.</span>
             </p>
 
             <div className="flex items-center gap-1">
@@ -270,20 +287,28 @@ export const InventarioView: React.FC<InventarioViewProps> = ({
       {/* Asset Table list */}
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse font-sans">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider">
-                <th className="py-3 px-4">Patrimônio</th>
-                <th className="py-3 px-4">Equipamento</th>
-                <th className="py-3 px-4">Categoria</th>
-                <th className="py-3 px-4">Estado</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4 text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-sm font-medium text-slate-700">
-              {paginatedAssets.length > 0 ? (
-                paginatedAssets.map((asset) => (
+          {isLoading ? (
+            <div className="flex justify-center items-center py-8">
+              <div className="w-6 h-6 border-2 border-brand-blue border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : items.length === 0 ? (
+            <div className="text-center py-8 text-slate-500 text-sm">
+              Nenhum item encontrado com os filtros atuais.
+            </div>
+          ) : (
+            <table className="w-full text-left text-sm border-collapse font-sans">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-150 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  <th className="py-3 px-4 w-[15%]">Patrimônio</th>
+                  <th className="py-3 px-4 w-[25%]">Equipamento</th>
+                  <th className="py-3 px-4 w-[15%]">Categoria</th>
+                  <th className="py-3 px-4 w-[15%]">Estado</th>
+                  <th className="py-3 px-4 w-[15%]">Status</th>
+                  <th className="py-3 px-4 w-[15%] text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-sm text-slate-600 font-medium">
+                {items.map((asset) => (
                   <tr key={asset.id} className="hover:bg-slate-50/70 transition-all duration-150">
                     <td className="py-2.5 px-4 font-mono text-sm font-bold text-slate-600">
                       {asset.numeroPatrimonio || asset.id}
@@ -317,20 +342,14 @@ export const InventarioView: React.FC<InventarioViewProps> = ({
                       </button>
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={6} className="py-10 text-center text-slate-400 font-medium">
-                    Nenhum item patrimonial correspondente encontrado.
-                  </td>
-                </tr>
-              )}
+                ))}
             </tbody>
           </table>
+          )}
         </div>
       </Card>
 
-      {filteredAssets.length > 0 && (
+      {totalItems > 0 && (
         <div className="flex items-center justify-between gap-3 text-xs text-slate-500">
           <span>Página {currentPage} de {totalPages}</span>
           <span>{itemsPerPage} itens por página</span>

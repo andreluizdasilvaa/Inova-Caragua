@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     if (status) where.status = status;
 
     const page = pageRaw ? Math.max(1, parseInt(pageRaw)) : 1;
-    const limit = limitRaw ? Math.max(1, Math.min(100, parseInt(limitRaw))) : 50;
+    const limit = limitRaw ? Math.max(1, parseInt(limitRaw)) : 999999;
     const skip = (page - 1) * limit;
 
     const [ocorrencias, total] = await Promise.all([
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     const {
       titulo, descricao, tipoSolicitacao, localizacaoDescricao,
       numeroPatrimonioTexto, itemId, instituicaoId, criadoPorId,
-      prioridade, setorId, anexos,
+      prioridade, setorId, anexos, enviarEmail
     } = body;
 
     if (!titulo || !descricao || !tipoSolicitacao || !instituicaoId || !criadoPorId) {

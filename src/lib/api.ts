@@ -74,18 +74,26 @@ export const api = {
 
   // ── Items / Assets ──
   items: {
-    list: (params?: { instituicaoId?: string; categoria?: string; page?: number; limit?: number }): Promise<any[]> => {
+    list: (params?: { instituicaoId?: string; categoria?: string; page?: number; limit?: number; search?: string }): Promise<any> => {
       const sp = new URLSearchParams();
       if (params?.instituicaoId) sp.set('instituicaoId', params.instituicaoId);
       if (params?.categoria) sp.set('categoria', params.categoria);
       if (params?.page) sp.set('page', String(params.page));
       if (params?.limit) sp.set('limit', String(params.limit));
+      if (params?.search) sp.set('search', params.search);
       const qs = sp.toString();
       return request<any>(`${BASE_URL}/itens${qs ? `?${qs}` : ''}`).then((res: any) => {
-        if (Array.isArray(res)) return res;
-        if (res && res.data) return res.data;
-        return [];
+        // Ensure we always return the full response { data, total, totalPages } if it exists, not just an array,
+        // because the caller might need `total` for pagination.
+        return res;
       });
+    },
+
+    stats: (params?: { instituicaoId?: string }) => {
+      const sp = new URLSearchParams();
+      if (params?.instituicaoId) sp.set('instituicaoId', params.instituicaoId);
+      const qs = sp.toString();
+      return request<any>(`${BASE_URL}/itens/stats${qs ? `?${qs}` : ''}`);
     },
 
     get: (id: string) => request<any>(`${BASE_URL}/itens?id=${id}`),

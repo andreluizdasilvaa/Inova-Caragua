@@ -4,6 +4,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Occurrence, Asset, CategoriaItem } from '@/types';
 import { StatsCard, Card, Button } from '@/components/UI';
 import { formatDate } from '@/lib/utils/timestamp';
+import { api } from '@/lib/api';
 import { 
   AlertTriangle, 
   CheckCircle, 
@@ -86,7 +87,7 @@ const MapaLeaflet = dynamic(
 
 interface DashboardViewProps {
   occurrences: Occurrence[];
-  assets: Asset[];
+  assets?: Asset[];
   setView: (view: string) => void;
   setSelectedOccurrence?: (occ: Occurrence) => void;
 }
@@ -274,10 +275,17 @@ const PainelControles: React.FC<PainelControlesProps> = ({
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
   occurrences,
-  assets,
+  assets = [],
   setView,
   setSelectedOccurrence
 }) => {
+  const [assetStats, setAssetStats] = useState({ total: 0, ativo: 0, manutencao: 0, baixado: 0 });
+
+  useEffect(() => {
+    api.items.stats().then(stats => {
+      setAssetStats(stats);
+    }).catch(err => console.error('Failed to load asset stats', err));
+  }, []);
   const [hoveredSlice, setHoveredSlice] = useState<number | null>(null);
   
   // Estados do mapa de calor
@@ -302,10 +310,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   ).length;
   const resolvedOccurrences = occurrences.filter(o => o.status === 'CONCLUIDA').length;
 
-  const totalAssets = assets.length;
-  const operationalAssets = assets.filter(a => a.status === 'ATIVO').length;
-  const maintenanceAssets = assets.filter(a => a.status === 'EM_MANUTENCAO').length;
-  const damagedAssets = assets.filter(a => a.status === 'BAIXADO').length;
+  const totalAssets = assetStats.total;
+  const maintenanceAssets = assetStats.manutencao;
+  const damagedAssets = assetStats.baixado;
 
   // Category analysis by tipoSolicitacao
   const categories = useMemo(() => {

@@ -23,10 +23,10 @@ export default function AdminDashboard() {
   const { data: session } = useSession()
 
   // Global Interactive Databases kept in React State
-  const [occurrences, setOccurrences] = useState<Occurrence[]>(mockOccurrences);
+  const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
 
-  // Fetch real assets on mount
+  // Fetch real assets and occurrences on mount
   React.useEffect(() => {
     fetch('/api/itens')
       .then(res => res.json())
@@ -36,13 +36,22 @@ export default function AdminDashboard() {
         }
       })
       .catch(err => console.error('Error fetching items:', err));
+
+    fetch('/api/ocorrencias')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setOccurrences(data);
+        }
+      })
+      .catch(err => console.error('Error fetching occurrences:', err));
   }, []);
 
   // Active View Router
   const [currentView, setView] = useState<string>('dashboard');
 
   // Selected detail items
-  const [selectedOccurrence, setSelectedOccurrence] = useState<Occurrence | null>(mockOccurrences[0]);
+  const [selectedOccurrence, setSelectedOccurrence] = useState<Occurrence | null>(null);
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(mockAssets[0]);
 
   // Mobile sidebar visibility

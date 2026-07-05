@@ -1,105 +1,4 @@
-import { 
-  Papel, 
-  CargoEscolar, 
-  CategoriaItem, 
-  EstadoConservacao, 
-  StatusItem, 
-  TipoSolicitacao, 
-  Prioridade, 
-  StatusOcorrencia, 
-  TipoAnexo 
-} from '../src/generated/client';
-
-// Re-export generated enums so components can use them
-export type { 
-  Papel, 
-  CargoEscolar, 
-  CategoriaItem, 
-  EstadoConservacao, 
-  StatusItem, 
-  TipoSolicitacao, 
-  Prioridade, 
-  StatusOcorrencia, 
-  TipoAnexo 
-};
-
-export interface UserSession {
-  user: {
-    id: string;
-    nome: string;
-    email: string;
-    papel: Papel;
-    cargo?: CargoEscolar | null;
-    instituicaoId?: string | null;
-  };
-}
-
-export interface Occurrence {
-  id: string;
-  numero: number;
-  titulo: string;
-  descricao: string;
-  tipoSolicitacao: TipoSolicitacao;
-  status: StatusOcorrencia;
-  prioridade: Prioridade | null;
-  localizacaoDescricao?: string | null;
-  numeroPatrimonioTexto?: string | null;
-  imagens?: string[] | null; // URLs das imagens anexadas (object URLs de previews)
-  observacoesTriagem?: string | null;
-  observacoesMestre?: string | null;
-  motivoRecusa?: string | null;
-  prestadorServico?: string | null;
-  valorOrcamento?: number | null;
-  dataVisitaAgendada?: Date | null;
-  dataConclusao?: Date | null;
-  dataTriagem?: Date | null;
-  dataAprovacao?: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
-  instituicaoId: string;
-  setorId?: string | null;
-  itemId?: string | null;
-  criadoPorId: string;
-  triagemPorId?: string | null;
-  aprovadoPorId?: string | null;
-}
-
-export interface Asset {
-  id: string;
-  nome: string;
-  categoria: CategoriaItem;
-  numeroPatrimonio?: string | null;
-  numeroSerie?: string | null;
-  marca?: string | null;
-  modelo?: string | null;
-  estadoConservacao: EstadoConservacao;
-  status: StatusItem;
-  dataAquisicao?: Date | null;
-  valorAquisicao?: number | null;
-  observacoes?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  setorId: string;
-  instituicaoId: string;
-  cadastradoPorId?: string | null;
-}
-
-export interface AssetHistory {
-  id: string;
-  statusAnterior?: StatusOcorrencia | null;
-  statusNovo: StatusOcorrencia;
-  comentario?: string | null;
-  createdAt: Date;
-  ocorrenciaId: string;
-  autorId: string;
-}
-
-export interface SchoolStats {
-  instituicaoId: string;
-  nomeInstituicao: string;
-  openCount: number;
-  similarCases30d: number;
-}
+import { Occurrence, Asset, OccurrenceHistory, SchoolStats } from './types';
 
 export const mockOccurrences: Occurrence[] = [
   {
@@ -112,10 +11,6 @@ export const mockOccurrences: Occurrence[] = [
     prioridade: 'ALTA',
     localizacaoDescricao: 'Segundo andar',
     numeroPatrimonioTexto: '#PAT-HID-204',
-    imagens: [
-      'https://placehold.co/800x600/1e293b/e2f1fd?text=Vazamento+1',
-      'https://placehold.co/800x600/334155/e2f1fd?text=Vazamento+2'
-    ],
     createdAt: new Date('2023-10-24T08:30:00.000Z'),
     updatedAt: new Date('2023-10-24T08:30:00.000Z'),
     instituicaoId: 'inst_central_high',
@@ -278,7 +173,6 @@ export const mockAssets: Asset[] = [
     createdAt: new Date('2023-03-15T08:00:00.000Z'),
     updatedAt: new Date('2023-03-15T08:00:00.000Z'),
     setorId: 'setor_biblioteca',
-    instituicaoId: 'inst_central_high',
     cadastradoPorId: 'user_mestre'
   },
   {
@@ -297,7 +191,6 @@ export const mockAssets: Asset[] = [
     createdAt: new Date('2023-05-10T08:00:00.000Z'),
     updatedAt: new Date('2023-05-10T08:00:00.000Z'),
     setorId: 'setor_sala12',
-    instituicaoId: 'cmr6vwyqj0002w8vpvnzxa02s',
     cadastradoPorId: 'user_mestre'
   },
   {
@@ -316,7 +209,6 @@ export const mockAssets: Asset[] = [
     createdAt: new Date('2022-10-12T08:00:00.000Z'),
     updatedAt: new Date('2022-10-12T08:00:00.000Z'),
     setorId: 'setor_laboratorio',
-    instituicaoId: 'cmr6vwyqj0002w8vpvnzxa02s',
     cadastradoPorId: 'user_mestre'
   },
   {
@@ -335,7 +227,6 @@ export const mockAssets: Asset[] = [
     createdAt: new Date('2024-01-22T08:00:00.000Z'),
     updatedAt: new Date('2024-01-22T08:00:00.000Z'),
     setorId: 'setor_patio',
-    instituicaoId: 'inst_cora_coralina',
     cadastradoPorId: 'user_mestre'
   },
   {
@@ -354,12 +245,11 @@ export const mockAssets: Asset[] = [
     createdAt: new Date('2021-06-14T08:00:00.000Z'),
     updatedAt: new Date('2021-06-14T08:00:00.000Z'),
     setorId: 'setor_corredor_a',
-    instituicaoId: 'inst_monteiro_lobato',
     cadastradoPorId: 'user_mestre'
   }
 ];
 
-export const mockAssetHistory: Record<string, AssetHistory[]> = {
+export const mockAssetHistory: Record<string, OccurrenceHistory[]> = {
   'PAT-2023-001': [
     {
       id: 'hist_1',

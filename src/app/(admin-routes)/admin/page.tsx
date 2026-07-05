@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Occurrence, Asset } from '@/mockData';
+import { Occurrence, Asset } from '@/types';
 import { mockOccurrences, mockAssets } from '@/mockData';
 import { Sidebar } from '@/components/Sidebar';
 import { Header } from '@/components/Header';
@@ -14,7 +14,7 @@ import { DetalhesView } from '@/components/views/DetalhesView';
 import { NovaOcorrenciaView } from '@/components/views/NovaOcorrenciaView';
 import { NovoAtivoView } from '@/components/views/NovoAtivoView';
 import { AprovacaoView } from '@/components/views/AprovacaoView';
-import { MapaCalorView } from '@/components/views/MapaCalorView';
+// import { MapaCalorView } from '@/components/views/MapaCalorView';
 import dynamic from 'next/dynamic';
 const MapaCalorView = dynamic(() => import('@/components/views/MapaCalorView').then(mod => mod.MapaCalorView), { ssr: false });
 import { signOut, useSession } from 'next-auth/react';

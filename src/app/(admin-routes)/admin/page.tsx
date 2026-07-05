@@ -13,7 +13,8 @@ import { LoteView } from '@/components/views/LoteView';
 import { DetalhesView } from '@/components/views/DetalhesView';
 import { NovaOcorrenciaView } from '@/components/views/NovaOcorrenciaView';
 import { NovoAtivoView } from '@/components/views/NovoAtivoView';
-import { MapaCalorView } from '@/components/views/MapaCalorView';
+import dynamic from 'next/dynamic';
+const MapaCalorView = dynamic(() => import('@/components/views/MapaCalorView').then(mod => mod.MapaCalorView), { ssr: false });
 import { signOut, useSession } from 'next-auth/react';
 
 export default function AdminDashboard() {

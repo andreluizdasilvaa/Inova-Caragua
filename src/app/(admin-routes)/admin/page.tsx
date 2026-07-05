@@ -218,6 +218,7 @@ export default function AdminDashboard() {
           }}
           session={session}
           onLogout={handleLogout}
+          onCloseMobile={() => setSidebarOpen(false)}
         />
       </div>
 

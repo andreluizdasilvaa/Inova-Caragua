@@ -91,6 +91,7 @@ export default function TriageDashboard() {
           }}
           session={session}
           onLogout={handleLogout}
+          onCloseMobile={() => setSidebarOpen(false)}
         />
       </div>
 

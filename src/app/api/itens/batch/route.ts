@@ -104,6 +104,7 @@ export async function POST(request: NextRequest) {
     // Validate and create items
     const errors: { index: number; message: string }[] = [];
     let created = 0;
+    const validItemsToInsert: any[] = [];
 
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
@@ -170,34 +171,39 @@ export async function POST(request: NextRequest) {
         valorAquisicao = val;
       }
 
+      validItemsToInsert.push({
+        nome: item.nome.trim(),
+        categoria: categoria as any,
+        numeroPatrimonio: pat || null,
+        numeroSerie: item.numeroSerie?.trim() || null,
+        marca: item.marca?.trim() || null,
+        modelo: item.modelo?.trim() || null,
+        estadoConservacao: estadoConservacao as any,
+        status: status as any,
+        dataAquisicao,
+        valorAquisicao,
+        observacoes: item.observacoes?.trim() || null,
+        setorId: defaultSetorId,
+        instituicaoId,
+        cadastradoPorId: cadastradoPorId || null,
+      });
+      
+      if (pat) existingPatrimonios.add(pat);
+    }
+    
+    if (validItemsToInsert.length > 0) {
       try {
-        await prisma.item.create({
-          data: {
-            nome: item.nome.trim(),
-            categoria: categoria as any,
-            numeroPatrimonio: pat || null,
-            numeroSerie: item.numeroSerie?.trim() || null,
-            marca: item.marca?.trim() || null,
-            modelo: item.modelo?.trim() || null,
-            estadoConservacao: estadoConservacao as any,
-            status: status as any,
-            dataAquisicao,
-            valorAquisicao,
-            observacoes: item.observacoes?.trim() || null,
-            setorId: defaultSetorId,
-            instituicaoId,
-            cadastradoPorId: cadastradoPorId || null,
-          },
+        const result = await prisma.item.createMany({
+          data: validItemsToInsert,
+          skipDuplicates: true, // Just in case, though we pre-validated
         });
-        created++;
-        // Add to existing set so subsequent items in the same batch
-        // don't conflict with this one
-        if (pat) existingPatrimonios.add(pat);
+        created = result.count;
       } catch (err: any) {
-        const msg = err?.message?.includes('Unique constraint')
-          ? `Nº patrimônio "${pat}" já existe no sistema`
-          : `Erro ao criar item: ${err?.message || 'erro desconhecido'}`;
-        errors.push({ index: i, message: msg });
+        console.error('Error in batch createMany:', err);
+        return NextResponse.json(
+          { error: 'Failed to insert valid items into database' },
+          { status: 500 }
+        );
       }
     }
 

@@ -1,6 +1,6 @@
-# Boilerplate de Autenticação Next-Auth
+# Sistema de Gestão Inova-Caragua
 
-Um boilerplate completo e pronto para uso de um sistema de autenticação com **Next.js 16**, **NextAuth.js 4** e **Prisma ORM**, com banco de dados PostgreSQL e styling com Tailwind CSS.
+Um sistema completo de gestão de inventário e ocorrências, com autenticação pronta para uso com **Next.js 16**, **NextAuth.js 4** e **Prisma ORM**, banco de dados PostgreSQL e styling com Tailwind CSS.
 
 ## 📋 Índice
 
@@ -49,7 +49,7 @@ Um boilerplate completo e pronto para uso de um sistema de autenticação com **
 
 ```sql
 -- Abra seu cliente PostgreSQL (psql, pgAdmin, etc)
-CREATE DATABASE boilerplate_auth;
+CREATE DATABASE inova_caragua;
 ```
 
 #### Execute as migrações Prisma
@@ -136,7 +136,7 @@ O token expira em 1 minuto via TTL no Redis. Esse tempo foi mantido curto para r
 ## 📁 Estrutura do Projeto
 
 ```
-boilerplate-auth/
+inova-caragua/
 ├── src/
 │   ├── app/                          # Aplicação Next.js (App Router)
 │   │   ├── api/
@@ -199,10 +199,10 @@ Crie um arquivo `.env.local` na raiz do projeto com as seguintes variáveis:
 
 ```env
 # Banco de Dados PostgreSQL
-DATABASE_URL="postgresql://user:password@localhost:5432/boilerplate_auth"
+DATABASE_URL="postgresql://user:password@localhost:5432/inova_caragua"
 
 # Conexão direta ao banco, usada por ferramentas e migrações
-DIRECT_URL="postgresql://user:password@localhost:5432/boilerplate_auth"
+DIRECT_URL="postgresql://user:password@localhost:5432/inova_caragua"
 
 # NextAuth Secret (gere com: openssl rand -base64 32)
 NEXTAUTH_SECRET="sua_chave_secreta_aqui"
@@ -216,7 +216,7 @@ GOOGLE_CLIENT_SECRET="seu_secret_do_google"
 
 # Resend
 RESEND_API_KEY=""
-RESEND_FROM_EMAIL="Boilerplate Auth <no-reply@seudominio.com>"
+RESEND_FROM_EMAIL="Inova Caragua <no-reply@seudominio.com>"
 
 # Upstash Redis
 UPSTASH_REDIS_REST_URL=""

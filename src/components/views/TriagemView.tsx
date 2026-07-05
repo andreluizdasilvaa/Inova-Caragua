@@ -494,7 +494,7 @@ export const TriagemView: React.FC<TriagemViewProps> = ({
                 </div>
                 
                 <div className="space-y-2 mb-4">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">4. Anexos Adicionais (Base64)</label>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">4. Anexos Adicionais</label>
                   <input
                     type="file"
                     multiple

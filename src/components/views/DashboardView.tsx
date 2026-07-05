@@ -581,7 +581,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* Map and Controls Row */}
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_20rem] gap-4 items-start">
           {/* Map Container */}
-          <div className="min-w-0 rounded-2xl overflow-hidden border border-slate-200 shadow-md relative bg-white h-max xl:h-[600px]">
+          <div className="min-w-0 rounded-2xl overflow-hidden border border-slate-200 shadow-md relative bg-white h-[400px] md:h-[500px] xl:h-[600px]">
             {erro ? (
               <div className="flex items-center justify-center h-full bg-slate-50 text-red-500 text-sm">
                 ⚠ {erro}

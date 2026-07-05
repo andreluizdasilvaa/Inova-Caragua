@@ -133,6 +133,8 @@ export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
 
   const [showMotivoModal, setShowMotivoModal] = useState<string | null>(null);
   const [motivoOcc, setMotivoOcc] = useState<Occurrence | null>(null);
+  
+  const [schedulingOccInfo, setSchedulingOccInfo] = useState<Occurrence | null>(null);
 
   const handleEditClick = (occ: Occurrence) => {
     setSelectedOccurrence(occ);
@@ -163,7 +165,64 @@ export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
 
   return (
     <div className="space-y-5">
-      {/* Motivo Recusa Modal */}
+      {/* Scheduling Info Modal */}
+      {schedulingOccInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50/50">
+              <div className="flex items-center gap-2 text-brand-blue">
+                <Calendar className="w-5 h-5" />
+                <h3 className="font-bold">Detalhes do Agendamento</h3>
+              </div>
+              <button 
+                onClick={() => setSchedulingOccInfo(null)}
+                className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4 text-sm text-slate-600">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="block text-xs font-bold text-slate-400 uppercase mb-1">Data</span>
+                  <div className="flex items-center gap-2 font-semibold text-slate-700">
+                    <Calendar className="w-4 h-4 text-slate-400" />
+                    {schedulingOccInfo.dataVisitaAgendada ? formatDate(schedulingOccInfo.dataVisitaAgendada) : '—'}
+                  </div>
+                </div>
+                <div>
+                  <span className="block text-xs font-bold text-slate-400 uppercase mb-1">Hora</span>
+                  <div className="flex items-center gap-2 font-semibold text-slate-700">
+                    <Clock className="w-4 h-4 text-slate-400" />
+                    {schedulingOccInfo.dataVisitaAgendada ? formatTime(schedulingOccInfo.dataVisitaAgendada) : '—'}
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <span className="block text-xs font-bold text-slate-400 uppercase mb-1">Técnico/Prestador</span>
+                <p className="font-semibold text-slate-700">
+                  {schedulingOccInfo.prestadorServico || 'Não informado'}
+                </p>
+              </div>
+
+              <div>
+                <span className="block text-xs font-bold text-slate-400 uppercase mb-1">Observações do Agendamento</span>
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 text-slate-700 whitespace-pre-wrap">
+                  {schedulingOccInfo.observacoesMestre || 'Nenhuma observação.'}
+                </div>
+              </div>
+            </div>
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+              <Button variant="secondary" onClick={() => setSchedulingOccInfo(null)} className="px-6">
+                Fechar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rejection/Correction Modal */}
       {showMotivoModal !== null && motivoOcc && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 space-y-4">
@@ -345,13 +404,14 @@ export const OcorrenciasView: React.FC<OcorrenciasViewProps> = ({
                     <td className="py-3 px-4 text-slate-500">{formatDate(occ.createdAt)}</td>
                     <td className="py-3 px-4 text-slate-500">
                       {occ.dataVisitaAgendada ? (
-                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-purple-700 bg-purple-50 px-2.5 py-1.5 rounded-md border border-purple-200 whitespace-nowrap">
+                        <button 
+                          onClick={() => setSchedulingOccInfo(occ)}
+                          className="inline-flex items-center gap-1.5 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 px-2.5 py-1.5 rounded-md border border-purple-200 whitespace-nowrap cursor-pointer transition-colors"
+                          title="Ver detalhes do agendamento"
+                        >
                           <Calendar className="w-3.5 h-3.5 text-purple-500 shrink-0" />
-                          {formatDate(occ.dataVisitaAgendada)}
-                          <span className="text-purple-300">•</span>
-                          <Clock className="w-3.5 h-3.5 text-purple-500 shrink-0" />
-                          {formatTime(occ.dataVisitaAgendada)}
-                        </span>
+                          Agendado
+                        </button>
                       ) : (
                         <span className="text-xs text-slate-400">—</span>
                       )}

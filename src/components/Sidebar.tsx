@@ -11,7 +11,8 @@ import {
   ShieldAlert,
   Flame,
   Users,
-  Building
+  Building,
+  X
 } from 'lucide-react';
 import Logo from '@/assets/logo_inova.png'
 import Image from 'next/image';
@@ -21,13 +22,15 @@ interface SidebarProps {
   setView: (view: string) => void;
   session: Session | null;
   onLogout: () => void;
+  onCloseMobile?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
   currentView, 
   setView, 
   session, 
-  onLogout 
+  onLogout,
+  onCloseMobile
 }) => {
   const papel = (session?.user as { papel?: string })?.papel
 
@@ -49,13 +52,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const focusReset = "outline-none focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:outline-none";
 
   return (
-    <aside className="w-60 bg-slate-900 border-r border-slate-800 text-slate-100 flex flex-col h-screen fixed left-0 top-0 z-20 shrink-0 font-sans">
+    <aside className="w-60 bg-slate-900 border-r border-slate-800 text-slate-100 flex flex-col h-screen fixed left-0 top-0 z-40 shrink-0 font-sans">
       {/* Brand Header */}
-      <div className="p-4 border-b border-slate-800">
+      <div className="p-4 border-b border-slate-800 flex items-center justify-between">
         <Image 
           src={Logo}
           alt='Logo Inova Caragua - Administração'
         />
+        {onCloseMobile && (
+          <button 
+            onClick={onCloseMobile}
+            className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       {/* Main Navigation links */}

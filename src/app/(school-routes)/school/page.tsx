@@ -193,6 +193,7 @@ export default function SchoolPage() {
           }}
           session={session}
           onLogout={handleLogout}
+          onCloseMobile={() => setSidebarOpen(false)}
         />
       </div>
 

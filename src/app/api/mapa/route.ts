@@ -162,14 +162,23 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const pontos = instituicoes.map(inst => ({
-    id: inst.id,
-    nome: inst.nome,
-    tipo: inst.tipo,
-    lat: inst.latitude as number,
-    lng: inst.longitude as number,
-    peso: pesoPorInstituicao.get(inst.id) ?? 0,
-  }))
+  const pontos = instituicoes.map(inst => {
+    let lat = inst.latitude as number;
+    let lng = inst.longitude as number;
+    
+    // As coordenadas antigas no seed foram inseridas sem o ponto decimal (-23618520)
+    if (lat && Math.abs(lat) > 90) lat = lat / 1000000;
+    if (lng && Math.abs(lng) > 180) lng = lng / 1000000;
+
+    return {
+      id: inst.id,
+      nome: inst.nome,
+      tipo: inst.tipo,
+      lat,
+      lng,
+      peso: pesoPorInstituicao.get(inst.id) ?? 0,
+    };
+  })
 
   return NextResponse.json({ pontos })
 }

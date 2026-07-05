@@ -27,6 +27,33 @@ const NotificationContext = createContext<NotificationContextData | undefined>(u
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Load from localStorage on mount
+  React.useEffect(() => {
+    try {
+      const stored = localStorage.getItem('inova_notifications');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Date objects are serialized as strings, we need to convert them back
+        const withDates = parsed.map((n: any) => ({
+          ...n,
+          timestamp: new Date(n.timestamp)
+        }));
+        setNotifications(withDates);
+      }
+    } catch (e) {
+      console.error('Failed to load notifications', e);
+    }
+    setIsLoaded(true);
+  }, []);
+
+  // Save to localStorage when changed
+  React.useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem('inova_notifications', JSON.stringify(notifications));
+    }
+  }, [notifications, isLoaded]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
